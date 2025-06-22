@@ -2,85 +2,70 @@
 
 {% block title %}Resumo Mensal de Faturamento{% endblock %}
 
-{% block head %}
-{{ super() }}
-<link rel="stylesheet" href="{{ url_for('static', filename='faturamento.css') }}">
-{% endblock %}
-
 {% block content %}
 <div class="container mt-4">
-    <div class="faturamento-panel">
-        <h2>Resumo Mensal de Faturamento</h2>
-        <p>Painel consolidado com o total faturado por obra em um determinado mês.</p>
-    </div>
+    <h1 class="mb-4">Resumo Mensal de Faturamento</h1>
 
-    <div class="card mb-4">
+    <!-- Formulário de Seleção de Mês/Ano -->
+    <div class="card bg-light mb-4">
         <div class="card-body">
-            <h5 class="card-title">Selecionar Período</h5>
-            <form method="GET" action="{{ url_for('faturamento_mensal') }}" class="row g-3 align-items-end">
-                <div class="col-md-5">
-                    <label for="mes" class="form-label">Mês</label>
-                    <select id="mes" name="mes" class="form-select">
+            <form method="GET" action="{{ url_for('medicoes.resumo_mensal') }}" class="form-inline">
+                <div class="form-group mr-2">
+                    <label for="mes" class="mr-2">Mês:</label>
+                    <select name="mes" id="mes" class="form-control">
                         {% for i in range(1, 13) %}
-                        <option value="{{ i }}" {% if i==mes_selecionado %}selected{% endif %}>
-                            {{ ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto",
-                            "Setembro", "Outubro", "Novembro", "Dezembro"][i-1] }}
+                        <option value="{{ i }}" {% if i==mes_selecionado %}selected{% endif %}>{{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mr-2">
+                    <label for="ano" class="mr-2">Ano:</label>
+                    <select name="ano" id="ano" class="form-control">
+                        {% for ano_opt in anos_disponiveis %}
+                        <option value="{{ ano_opt }}" {% if ano_opt==ano_selecionado %}selected{% endif %}>{{ ano_opt }}
                         </option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-5">
-                    <label for="ano" class="form-label">Ano</label>
-                    <input type="number" id="ano" name="ano" class="form-control" value="{{ ano_selecionado }}">
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-search"></i> Filtrar
-                    </button>
-                </div>
+                <button type="submit" class="btn btn-primary">Filtrar</button>
             </form>
         </div>
     </div>
 
+    <!-- Tabela de Resumo -->
     <div class="card">
+        <div class="card-header">
+            <h4>Faturamento de {{ mes_selecionado }}/{{ ano_selecionado }}</h4>
+        </div>
         <div class="card-body">
-            <h5 class="card-title">
-                Resultados para {{ ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto",
-                "Setembro", "Outubro", "Novembro", "Dezembro"][mes_selecionado-1] }} de {{ ano_selecionado }}
-            </h5>
-            {% if resumo %}
-            <table class="table table-striped table-hover table-medicoes">
-                <thead>
+            <table class="table table-striped table-hover">
+                <thead class="thead-dark">
                     <tr>
-                        <th scope="col">Construtora</th>
-                        <th scope="col">Obra</th>
-                        <th scope="col" class="text-end">Total Faturado (R$)</th>
+                        <th>Construtora</th>
+                        <th>Obra</th>
+                        <th class="text-right">Total no Mês</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in resumo %}
                     <tr>
                         <td>{{ item.construtora_nome }}</td>
-                        <td>
-                            <a href="{{ url_for('listar_medicoes', obra_id=item.id) }}">{{ item.obra_nome }}</a>
-                        </td>
-                        <td class="text-end">{{ "%.2f"|format(item.total_mes) }}</td>
+                        <td>{{ item.obra_nome }}</td>
+                        <td class="text-right">R$ {{ "%.2f"|format(item.total_mes|float) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center">Nenhuma medição encontrada para este período.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot>
-                    <tr class="table-group-divider">
-                        <td colspan="2" class="text-end fw-bold total-geral">Total Geral do Mês</td>
-                        <td class="text-end fw-bold total-geral">R$ {{ "%.2f"|format(total_geral) }}</td>
+                <tfoot class="bg-dark text-white">
+                    <tr>
+                        <td colspan="2" class="text-right"><strong>Total Geral:</strong></td>
+                        <td class="text-right"><strong>R$ {{ "%.2f"|format(total_geral|float) }}</strong></td>
                     </tr>
                 </tfoot>
             </table>
-            {% else %}
-            <div class="alert alert-info text-center" role="alert">
-                <i class="bi bi-info-circle-fill me-2"></i>
-                Nenhum faturamento registrado para o período selecionado.
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>

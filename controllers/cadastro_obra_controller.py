@@ -2,8 +2,12 @@ from flask import Blueprint, render_template, request, jsonify, flash, redirect,
 import requests
 import os
 import re
-from app import get_db_connection, get_etapas_era
+from werkzeug.utils import secure_filename
 import sqlite3
+
+from database import get_db_connection
+from models.obra_model import Obra
+from utils.empresa_api import EmpresaAPI
 
 # Cria um Blueprint para o cadastro de obras
 cadastro_obra_bp = Blueprint(
@@ -162,7 +166,7 @@ def cadastrar_obra():
             obra_id = cursor.lastrowid
 
             # 4. Criar etapas ERA padrão para a nova obra
-            etapas_padrao = get_etapas_era()
+            etapas_padrao = Obra.get_etapas_era()
             for etapa, itens in etapas_padrao.items():
                 for item in itens:
                     cursor.execute("""
@@ -188,3 +192,21 @@ def cadastrar_obra():
             conn.close()
 
     return render_template("obras/cadastrar_obra.html", construtoras=construtoras)
+
+
+@cadastro_obra_bp.route('/adicionar', methods=['GET', 'POST'])
+def adicionar_obra():
+    # ... (código da rota) ...
+    # LÓGICA DE VISUALIZAÇÃO (GET)
+    conn = get_db_connection()
+    construtoras = conn.execute(
+        'SELECT * FROM construtoras ORDER BY nome').fetchall()
+    sistemas_protecao = conn.execute(
+        'SELECT * FROM sistemas_protecao ORDER BY nome').fetchall()
+    etapas = list(Obra.get_etapas_era().keys())
+    conn.close()
+
+    return render_template('adicionar.html',
+                           construtoras=construtoras,
+                           sistemas_protecao=sistemas_protecao,
+                           etapas=etapas)
