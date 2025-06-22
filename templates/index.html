@@ -43,7 +43,7 @@
         <div class="col-md-3">
             <div class="card bg-info text-white">
                 <div class="card-body text-center">
-                    <a href="{{ url_for('adicionar_obra') }}" class="btn btn-light btn-lg">
+                    <a href="{{ url_for('cadastro_obra_bp.adicionar_obra') }}" class="btn btn-light btn-lg">
                         <i class="bi bi-plus-circle"></i> Nova Obra
                     </a>
                 </div>
@@ -114,140 +114,95 @@
         </div>
     </div>
 
-    <!-- Lista de Obras Agrupadas -->
-    <div id="obras-container">
-        {% if obras_agrupadas %}
-        {% for construtora, obras in obras_agrupadas.items() %}
-        <div class="construtora-group mb-4">
-            <div class="construtora-header">
-                <h2 class="construtora-title">
-                    <i class="bi bi-building"></i> {{ construtora }}
-                </h2>
-                <span class="badge bg-secondary">{{ obras|length }} obra(s)</span>
-            </div>
-
-            <div class="row">
-                {% for obra in obras %}
-                <div class="col-md-6 col-lg-4 mb-3">
-                    <div class="card obra-card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="card-title mb-0">{{ obra.nome }}</h6>
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                    data-bs-toggle="dropdown">
-                                    <i class="bi bi-three-dots"></i>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{{ url_for('visualizar_obra', id=obra.id) }}">
-                                            <i class="bi bi-eye"></i> Visualizar
-                                        </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('editar_obra', id=obra.id) }}">
-                                            <i class="bi bi-pencil"></i> Editar
-                                        </a></li>
-                                    <li>
-                                        <hr class="dropdown-divider">
-                                    </li>
-                                    <li><button class="dropdown-item text-danger"
-                                            onclick="confirmarExclusao({{ obra.id }}, '{{ obra.nome }}')">
-                                            <i class="bi bi-trash"></i> Excluir
-                                        </button></li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div class="card-body">
-                            <!-- Informações básicas -->
-                            <div class="mb-3">
-                                <p class="mb-1"><strong>Cidade:</strong> {{ obra.cidade or 'Não informada' }}</p>
-                                <p class="mb-1"><strong>Responsável:</strong> {{ obra.responsavel or 'Não definido' }}
-                                </p>
-                                <p class="mb-1"><strong>Etapa Atual:</strong>
-                                    <span class="badge bg-info">{{ obra.etapa_atual }}</span>
-                                </p>
-                                <p class="mb-0"><strong>Status:</strong>
-                                    {% if obra.status == 'Em andamento' %}
-                                    <span class="badge bg-warning">{{ obra.status }}</span>
-                                    {% elif obra.status == 'Concluído' %}
-                                    <span class="badge bg-success">{{ obra.status }}</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">{{ obra.status }}</span>
-                                    {% endif %}
-                                </p>
-                            </div>
-
-                            <!-- Progresso das etapas ERA -->
-                            <div class="mb-3">
-                                <h6 class="text-muted">Progresso ERA:</h6>
-                                {% for etapa_prog in obra.etapas_progresso %}
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <small>{{ etapa_prog.etapa }}</small>
-                                    <small>{{ etapa_prog.concluidos }}/{{ etapa_prog.total }}</small>
-                                </div>
-                                <div class="progress" style="height: 6px;">
-                                    <div class="progress-bar" role="progressbar"
-                                        style="width: {{ (etapa_prog.concluidos / etapa_prog.total * 100)|round(1) }}%">
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-
-                            <!-- Sistemas de proteção -->
-                            <div class="mb-3">
-                                <h6 class="text-muted">Sistemas:</h6>
-                                <div class="d-flex flex-wrap gap-1">
-                                    {% for sistema in obra.sistemas %}
-                                    {% if sistema.status == 'Concluído' %}
-                                    <span class="badge bg-success">{{ sistema.nome }}</span>
-                                    {% elif sistema.status == 'Em andamento' %}
-                                    <span class="badge bg-warning">{{ sistema.nome }}</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">{{ sistema.nome }}</span>
-                                    {% endif %}
-                                    {% endfor %}
-                                </div>
-                            </div>
-
-                            <!-- Anotações -->
-                            {% if obra.anotacoes %}
-                            <div class="mb-3">
-                                <h6 class="text-muted">Anotações:</h6>
-                                <p class="small text-muted">{{ obra.anotacoes[:100] }}{% if obra.anotacoes|length > 100
-                                    %}...{% endif %}</p>
-                            </div>
-                            {% endif %}
-                        </div>
-
-                        <div class="card-footer">
-                            <div class="d-flex justify-content-between">
-                                <button class="btn btn-sm btn-outline-primary"
-                                    onclick="abrirPasta('{{ obra.caminho_pasta }}')">
-                                    <i class="bi bi-folder2-open"></i> Abrir Pasta
-                                </button>
-                                <a href="{{ url_for('visualizar_obra', id=obra.id) }}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-clipboard-check"></i> Painel ERA
-                                </a>
-                            </div>
-                        </div>
+    <!-- Container dos Cards de Obra -->
+    <div id="obras-container" class="row">
+        {% if obras %}
+        {% for obra in obras %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card obra-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0" title="{{ obra.nome }}">{{ obra.nome|truncate(25) }}</h6>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('visualizar_obra', id=obra.id) }}">
+                                    <i class="bi bi-eye me-2"></i>Visualizar
+                                </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('editar_obra', id=obra.id) }}">
+                                    <i class="bi bi-pencil me-2"></i>Editar
+                                </a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><button class="dropdown-item text-danger"
+                                    onclick="confirmarExclusao({{ obra.id }}, '{{ obra.nome }}')">
+                                    <i class="bi bi-trash me-2"></i>Excluir
+                                </button></li>
+                        </ul>
                     </div>
                 </div>
-                {% endfor %}
+
+                <div class="card-body">
+                    <p class="mb-1">
+                        <span class="badge bg-dark">{{ obra.construtora_nome or 'Sem Construtora' }}</span>
+                    </p>
+                    <p class="mb-1"><strong>Cidade:</strong> {{ obra.cidade or 'Não informada' }}</p>
+                    <p class="mb-1"><strong>Responsável:</strong> {{ obra.responsavel or 'Não definido' }}</p>
+                    <p class="mb-1"><strong>Etapa Atual:</strong>
+                        <span class="badge bg-info">{{ obra.etapa_atual }}</span>
+                    </p>
+                    <p class="mb-0"><strong>Status:</strong>
+                        {% if obra.status == 'Em andamento' %}
+                        <span class="badge bg-warning">{{ obra.status }}</span>
+                        {% elif obra.status == 'Concluído' %}
+                        <span class="badge bg-success">{{ obra.status }}</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ obra.status }}</span>
+                        {% endif %}
+                    </p>
+
+                    {% if obra.anotacoes %}
+                    <div class="mt-2">
+                        <small class="text-muted" title="{{ obra.anotacoes }}">
+                            <strong>Anotações:</strong> {{ obra.anotacoes|truncate(50) }}
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-sm btn-outline-primary" data-caminho="{{ obra.caminho_pasta }}"
+                            onclick="abrirPasta(this)" {% if not obra.caminho_pasta %}disabled{% endif %}>
+                            <i class="bi bi-folder2-open me-1"></i> Abrir Pasta
+                        </button>
+                        <a href="{{ url_for('visualizar_obra', id=obra.id) }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-clipboard-check me-1"></i> Painel ERA
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
         {% endfor %}
         {% else %}
-        <div class="text-center py-5 empty-state">
-            <i class="bi bi-inbox display-1 text-muted"></i>
-            <h3 class="text-muted mt-3">Nenhuma obra encontrada</h3>
-            <p class="text-muted">
-                {% if filtros.construtora_id or filtros.busca or filtros.etapa or filtros.sistema %}
-                Nenhuma obra corresponde aos filtros aplicados.
-                {% else %}
-                Não há obras cadastradas no sistema.
-                {% endif %}
-            </p>
-            <a href="{{ url_for('adicionar_obra') }}" class="btn btn-primary mt-2">
-                <i class="bi bi-plus-circle"></i> Cadastrar Primeira Obra
-            </a>
+        <div class="col-12">
+            <div class="text-center py-5 empty-state">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <h3 class="text-muted mt-3">Nenhuma obra encontrada</h3>
+                <p class="text-muted">
+                    {% if filtros.construtora_id or filtros.busca or filtros.etapa or filtros.sistema %}
+                    Nenhuma obra corresponde aos filtros aplicados. Tente limpar os filtros.
+                    {% else %}
+                    Ainda não há obras cadastradas no sistema.
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('cadastro_obra_bp.cadastrar_obra') }}" class="btn btn-primary mt-2">
+                    <i class="bi bi-plus-circle me-2"></i>Cadastrar a Primeira Obra
+                </a>
+            </div>
         </div>
         {% endif %}
     </div>
@@ -279,82 +234,51 @@
 
 {% block extra_js %}
 <script>
-    // Função para abrir pasta
-    function abrirPasta(caminho) {
-        fetch('/abrir_pasta', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ caminho: caminho }),
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(data.message);
-                } else {
-                    showAlert(data.message, 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('Erro na requisição:', error);
-                showAlert('Erro de comunicação com o servidor.', 'danger');
-            });
-    }
-
-    // Função para exibir alertas dinâmicos
-    function showAlert(message, type = 'info') {
+    function showAlert(message, category = 'danger') {
         const placeholder = document.getElementById('alert-placeholder');
         const wrapper = document.createElement('div');
         wrapper.innerHTML = [
-            `<div class="alert alert-${type} alert-dismissible fade show" role="alert">`,
-            `   <div><i class="bi bi-exclamation-triangle-fill me-2"></i>${message}</div>`,
+            `<div class="alert alert-${category} alert-dismissible fade show" role="alert">`,
+            `   <div>${message}</div>`,
             '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
             '</div>'
         ].join('');
-
         placeholder.append(wrapper);
-
-        // Remove o alerta após 5 segundos
-        setTimeout(() => {
-            wrapper.remove();
-        }, 5000);
     }
 
-    // Função para exibir Toasts
-    function showToast(message) {
-        const placeholder = document.getElementById('alert-placeholder');
-        const toastEl = document.createElement('div');
-        toastEl.className = 'toast align-items-center text-white bg-success border-0 fade show';
-        toastEl.setAttribute('role', 'alert');
-        toastEl.setAttribute('aria-live', 'assertive');
-        toastEl.setAttribute('aria-atomic', 'true');
-
-        toastEl.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">
-                <i class="bi bi-check-circle-fill me-2"></i>
-                ${message}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-    `;
-        placeholder.appendChild(toastEl);
-
-        const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
-        toast.show();
-
-        toastEl.addEventListener('hidden.bs.toast', () => {
-            toastEl.remove();
-        });
+    async function abrirPasta(button) {
+        const caminho = button.dataset.caminho;
+        if (!caminho || caminho === 'None') {
+            showAlert('O caminho da pasta não foi definido para esta obra.', 'warning');
+            return;
+        }
+        try {
+            const response = await fetch('/abrir_pasta', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ caminho_pasta: caminho })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showAlert(data.message, 'success');
+            } else {
+                showAlert(data.error || 'Erro de comunicação com o servidor.');
+            }
+        } catch (error) {
+            console.error('Erro ao tentar abrir pasta:', error);
+            showAlert('Erro de comunicação com o servidor.');
+        }
     }
 
-    // Função para confirmar exclusão
     function confirmarExclusao(id, nome) {
-        document.getElementById('nomeObra').textContent = nome;
-        document.getElementById('formExclusao').action = '/excluir/' + id;
-        const modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
-        modal.show();
+        if (confirm(`Tem certeza que deseja excluir a obra "${nome}"? Esta ação não pode ser desfeita.`)) {
+            // Lógica para enviar o formulário de exclusão
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/excluir/' + id;
+            document.body.appendChild(form);
+            form.submit();
+        }
     }
 
     // Auto-submit do formulário quando mudar os filtros
