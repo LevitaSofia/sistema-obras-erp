@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Obra - {{ obra.nome }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-pencil-square me-2"></i>Editar Obra</h2>
+        <a href="{{ url_for('visualizar_obra', id=obra.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar para a Obra
+        </a>
+    </div>
+
+    <form method="POST" action="{{ url_for('editar_obra', id=obra.id) }}" class="needs-validation" novalidate>
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-building me-2"></i>Dados da Empresa (Busca por CNPJ)
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="cnpj" class="form-label">CNPJ</label>
+                        <input type="text" class="form-control" id="cnpj" name="cnpj"
+                            placeholder="Digite o CNPJ e saia do campo" value="{{ obra.cnpj or '' }}">
+                        <div class="spinner-border spinner-border-sm ms-2 d-none" id="cnpj-spinner" role="status">
+                            <span class="visually-hidden">Buscando...</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="razao_social" class="form-label">Razão Social</label>
+                        <input type="text" class="form-control" id="razao_social" name="razao_social"
+                            value="{{ obra.construtora_razao_social or '' }}" readonly>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="nome_fantasia" class="form-label">Nome da Obra / Nome Fantasia *</label>
+                        <input type="text" class="form-control" id="nome_fantasia" name="nome_fantasia"
+                            value="{{ obra.nome }}" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-geo-alt-fill me-2"></i>Endereço da Obra (Busca por CEP)
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="cep" class="form-label">CEP</label>
+                        <input type="text" class="form-control" id="cep" name="cep"
+                            placeholder="Preenchido automaticamente com o CNPJ" value="{{ obra.cep or '' }}" readonly>
+                        <div class="spinner-border spinner-border-sm ms-2 d-none" id="cep-spinner" role="status">
+                            <span class="visually-hidden">Buscando...</span>
+                        </div>
+                        <small class="form-text text-muted">Será preenchido automaticamente quando você consultar o
+                            CNPJ</small>
+                    </div>
+                    <div class="col-md-9 mb-3">
+                        <label for="endereco" class="form-label">Endereço (Logradouro)</label>
+                        <input type="text" class="form-control" id="endereco" name="endereco"
+                            value="{{ obra.endereco or '' }}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="numero" class="form-label">Número</label>
+                        <input type="text" class="form-control" id="numero" name="numero"
+                            value="{{ obra.numero or '' }}">
+                    </div>
+                    <div class="col-md-5 mb-3">
+                        <label for="bairro" class="form-label">Bairro</label>
+                        <input type="text" class="form-control" id="bairro" name="bairro"
+                            value="{{ obra.bairro or '' }}">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="cidade" class="form-label">Cidade</label>
+                        <input type="text" class="form-control" id="cidade" name="cidade"
+                            value="{{ obra.cidade or '' }}">
+                    </div>
+                    <div class="col-md-1 mb-3">
+                        <label for="uf" class="form-label">UF</label>
+                        <input type="text" class="form-control" id="uf" name="uf" value="{{ obra.uf or '' }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-gear-fill me-2"></i>Informações de Gestão
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="construtora_id" class="form-label">Construtora Responsável *</label>
+                        <select class="form-select" id="construtora_id" name="construtora_id" required>
+                            {% for c in construtoras %}
+                            <option value="{{ c.id }}" {% if c.id==obra.construtora_id %}selected{% endif %}>{{ c.nome
+                                }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="responsavel" class="form-label">Responsável Técnico</label>
+                        <input type="text" class="form-control" id="responsavel" name="responsavel"
+                            value="{{ obra.responsavel or '' }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="status" class="form-label">Status *</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="Em andamento" {% if obra.status=='Em andamento' %}selected{% endif %}>Em
+                                andamento</option>
+                            <option value="Concluído" {% if obra.status=='Concluído' %}selected{% endif %}>Concluído
+                            </option>
+                            <option value="Aguardando aprovação" {% if obra.status=='Aguardando aprovação' %}selected{%
+                                endif %}>Aguardando aprovação</option>
+                            <option value="Suspenso" {% if obra.status=='Suspenso' %}selected{% endif %}>Suspenso
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="etapa_atual" class="form-label">Etapa Atual *</label>
+                        <select class="form-select" id="etapa_atual" name="etapa_atual" required>
+                            {% for etapa in etapas_era %}
+                            <option value="{{ etapa }}" {% if etapa==obra.etapa_atual %}selected{% endif %}>{{ etapa }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="anotacoes" class="form-label">Anotações</label>
+                    <textarea class="form-control" id="anotacoes" name="anotacoes"
+                        rows="3">{{ obra.anotacoes or '' }}</textarea>
+                </div>
+                <div class="alert alert-warning">
+                    <strong>Caminho da Pasta:</strong> <code>{{ obra.caminho_pasta }}</code>
+                    <br>
+                    <small class="text-muted">Para alterar o caminho, edite o nome da obra ou a construtora. A pasta
+                        será renomeada automaticamente.</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-end">
+            <a href="{{ url_for('visualizar_obra', id=obra.id) }}" class="btn btn-secondary me-2">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save-fill me-2"></i>Salvar Alterações
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/auto_cadastro.js') }}"></script>
+{% endblock %}

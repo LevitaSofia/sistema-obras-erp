@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}Sistema de Gestão de Obras - Proteção Coletiva{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Painel de Obras</h1>
+        <a href="{{ url_for('cadastro_obra_bp.cadastrar_obra') }}" class="btn btn-success">
+            <i class="bi bi-plus-circle-fill me-2"></i>Cadastrar Nova Obra
+        </a>
+    </div>
+
+    <!-- Placeholder para alertas dinâmicos -->
+    <div id="alert-placeholder"></div>
+
+    <!-- Cabeçalho com estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3 class="card-title">{{ stats.total }}</h3>
+                    <p class="card-text">Total de Obras</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h3 class="card-title">{{ stats.andamento }}</h3>
+                    <p class="card-text">Em Andamento</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3 class="card-title">{{ stats.concluidas }}</h3>
+                    <p class="card-text">Concluídas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <a href="{{ url_for('adicionar_obra') }}" class="btn btn-light btn-lg">
+                        <i class="bi bi-plus-circle"></i> Nova Obra
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros Inteligentes -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros Inteligentes</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('index') }}" id="filtrosForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="construtora_id" class="form-label">Construtora</label>
+                        <select name="construtora_id" id="construtora_id" class="form-select">
+                            <option value="">Todas as construtoras</option>
+                            {% for construtora in construtoras %}
+                            <option value="{{ construtora.id }}" {% if
+                                filtros.construtora_id|string==construtora.id|string %}selected{% endif %}>
+                                {{ construtora.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="busca" class="form-label">Busca</label>
+                        <input type="text" name="busca" id="busca" class="form-control" value="{{ filtros.busca }}"
+                            placeholder="Nome, cidade ou responsável...">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="etapa" class="form-label">Etapa</label>
+                        <select name="etapa" id="etapa" class="form-select">
+                            <option value="">Todas as etapas</option>
+                            {% for etapa in etapas %}
+                            <option value="{{ etapa }}" {% if filtros.etapa==etapa %}selected{% endif %}>
+                                {{ etapa }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="sistema" class="form-label">Sistema</label>
+                        <select name="sistema" id="sistema" class="form-select">
+                            <option value="">Todos os sistemas</option>
+                            {% for sistema in sistemas_protecao %}
+                            <option value="{{ sistema.nome }}" {% if filtros.sistema==sistema.nome %}selected{% endif
+                                %}>
+                                {{ sistema.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="d-grid gap-2 w-100">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Filtrar
+                            </button>
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise"></i> Limpar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Obras Agrupadas -->
+    <div id="obras-container">
+        {% if obras_agrupadas %}
+        {% for construtora, obras in obras_agrupadas.items() %}
+        <div class="construtora-group mb-4">
+            <div class="construtora-header">
+                <h2 class="construtora-title">
+                    <i class="bi bi-building"></i> {{ construtora }}
+                </h2>
+                <span class="badge bg-secondary">{{ obras|length }} obra(s)</span>
+            </div>
+
+            <div class="row">
+                {% for obra in obras %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card obra-card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="card-title mb-0">{{ obra.nome }}</h6>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                    data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('visualizar_obra', id=obra.id) }}">
+                                            <i class="bi bi-eye"></i> Visualizar
+                                        </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('editar_obra', id=obra.id) }}">
+                                            <i class="bi bi-pencil"></i> Editar
+                                        </a></li>
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    <li><button class="dropdown-item text-danger"
+                                            onclick="confirmarExclusao({{ obra.id }}, '{{ obra.nome }}')">
+                                            <i class="bi bi-trash"></i> Excluir
+                                        </button></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <!-- Informações básicas -->
+                            <div class="mb-3">
+                                <p class="mb-1"><strong>Cidade:</strong> {{ obra.cidade or 'Não informada' }}</p>
+                                <p class="mb-1"><strong>Responsável:</strong> {{ obra.responsavel or 'Não definido' }}
+                                </p>
+                                <p class="mb-1"><strong>Etapa Atual:</strong>
+                                    <span class="badge bg-info">{{ obra.etapa_atual }}</span>
+                                </p>
+                                <p class="mb-0"><strong>Status:</strong>
+                                    {% if obra.status == 'Em andamento' %}
+                                    <span class="badge bg-warning">{{ obra.status }}</span>
+                                    {% elif obra.status == 'Concluído' %}
+                                    <span class="badge bg-success">{{ obra.status }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ obra.status }}</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+
+                            <!-- Progresso das etapas ERA -->
+                            <div class="mb-3">
+                                <h6 class="text-muted">Progresso ERA:</h6>
+                                {% for etapa_prog in obra.etapas_progresso %}
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small>{{ etapa_prog.etapa }}</small>
+                                    <small>{{ etapa_prog.concluidos }}/{{ etapa_prog.total }}</small>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar" role="progressbar"
+                                        style="width: {{ (etapa_prog.concluidos / etapa_prog.total * 100)|round(1) }}%">
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Sistemas de proteção -->
+                            <div class="mb-3">
+                                <h6 class="text-muted">Sistemas:</h6>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for sistema in obra.sistemas %}
+                                    {% if sistema.status == 'Concluído' %}
+                                    <span class="badge bg-success">{{ sistema.nome }}</span>
+                                    {% elif sistema.status == 'Em andamento' %}
+                                    <span class="badge bg-warning">{{ sistema.nome }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ sistema.nome }}</span>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Anotações -->
+                            {% if obra.anotacoes %}
+                            <div class="mb-3">
+                                <h6 class="text-muted">Anotações:</h6>
+                                <p class="small text-muted">{{ obra.anotacoes[:100] }}{% if obra.anotacoes|length > 100
+                                    %}...{% endif %}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between">
+                                <button class="btn btn-sm btn-outline-primary"
+                                    onclick="abrirPasta('{{ obra.caminho_pasta }}')">
+                                    <i class="bi bi-folder2-open"></i> Abrir Pasta
+                                </button>
+                                <a href="{{ url_for('visualizar_obra', id=obra.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-clipboard-check"></i> Painel ERA
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-center py-5 empty-state">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h3 class="text-muted mt-3">Nenhuma obra encontrada</h3>
+            <p class="text-muted">
+                {% if filtros.construtora_id or filtros.busca or filtros.etapa or filtros.sistema %}
+                Nenhuma obra corresponde aos filtros aplicados.
+                {% else %}
+                Não há obras cadastradas no sistema.
+                {% endif %}
+            </p>
+            <a href="{{ url_for('adicionar_obra') }}" class="btn btn-primary mt-2">
+                <i class="bi bi-plus-circle"></i> Cadastrar Primeira Obra
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <div class="modal fade" id="modalExclusao" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir a obra <strong id="nomeObra"></strong>?</p>
+                    <p class="text-danger"><small>Esta ação não pode ser desfeita e excluirá todos os dados
+                            relacionados.</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <form id="formExclusao" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-danger">Excluir</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Função para abrir pasta
+    function abrirPasta(caminho) {
+        fetch('/abrir_pasta', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ caminho: caminho }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message);
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Erro na requisição:', error);
+                showAlert('Erro de comunicação com o servidor.', 'danger');
+            });
+    }
+
+    // Função para exibir alertas dinâmicos
+    function showAlert(message, type = 'info') {
+        const placeholder = document.getElementById('alert-placeholder');
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = [
+            `<div class="alert alert-${type} alert-dismissible fade show" role="alert">`,
+            `   <div><i class="bi bi-exclamation-triangle-fill me-2"></i>${message}</div>`,
+            '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
+            '</div>'
+        ].join('');
+
+        placeholder.append(wrapper);
+
+        // Remove o alerta após 5 segundos
+        setTimeout(() => {
+            wrapper.remove();
+        }, 5000);
+    }
+
+    // Função para exibir Toasts
+    function showToast(message) {
+        const placeholder = document.getElementById('alert-placeholder');
+        const toastEl = document.createElement('div');
+        toastEl.className = 'toast align-items-center text-white bg-success border-0 fade show';
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+
+        toastEl.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+        placeholder.appendChild(toastEl);
+
+        const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+        toast.show();
+
+        toastEl.addEventListener('hidden.bs.toast', () => {
+            toastEl.remove();
+        });
+    }
+
+    // Função para confirmar exclusão
+    function confirmarExclusao(id, nome) {
+        document.getElementById('nomeObra').textContent = nome;
+        document.getElementById('formExclusao').action = '/excluir/' + id;
+        const modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
+        modal.show();
+    }
+
+    // Auto-submit do formulário quando mudar os filtros
+    document.addEventListener('DOMContentLoaded', function () {
+        const filtros = ['construtora_id', 'etapa', 'sistema'];
+        filtros.forEach(filtro => {
+            const elemento = document.getElementById(filtro);
+            if (elemento) {
+                elemento.addEventListener('change', function () {
+                    document.getElementById('filtrosForm').submit();
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

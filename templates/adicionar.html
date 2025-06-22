@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Adicionar Obra - Sistema de Gestão{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-plus-circle"></i> Adicionar Nova Obra</h1>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-building"></i> Informações da Obra
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <!-- Dados da Empresa (Busca por CNPJ) -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-building"></i> Dados da Empresa (Busca por CNPJ)</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="cnpj" class="form-label">CNPJ</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="cnpj" name="cnpj"
+                                            placeholder="Digite o CNPJ e aguarde">
+                                        <span class="input-group-text d-none" id="cnpj-spinner">
+                                            <span class="spinner-border spinner-border-sm" role="status"
+                                                aria-hidden="true"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="razao_social" class="form-label">Razão Social</label>
+                                    <input type="text" class="form-control" id="razao_social" name="razao_social"
+                                        readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="nome_fantasia" class="form-label">Nome da Obra / Nome Fantasia *</label>
+                                    <input type="text" class="form-control" id="nome_fantasia" name="nome_fantasia"
+                                        required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dados da Construtora e Obra -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-rulers"></i> Dados da Construtora e Obra</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="construtora_id" class="form-label">Construtora Responsável *</label>
+                                    <select class="form-select" id="construtora_id" name="construtora_id" required>
+                                        <option value="">Selecione uma construtora</option>
+                                        {% for construtora in construtoras %}
+                                        <option value="{{ construtora.id }}">{{ construtora.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="responsavel" class="form-label">Responsável Técnico</label>
+                                    <input type="text" class="form-control" id="responsavel" name="responsavel"
+                                        placeholder="Nome do responsável">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Endereço da Obra (Busca por CEP) -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-geo-alt-fill"></i> Endereço da Obra (Busca por CEP)</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label for="cep" class="form-label">CEP</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="cep" name="cep"
+                                            placeholder="Digite o CEP">
+                                        <span class="input-group-text d-none" id="cep-spinner">
+                                            <span class="spinner-border spinner-border-sm" role="status"
+                                                aria-hidden="true"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-7">
+                                    <label for="endereco" class="form-label">Endereço (Logradouro)</label>
+                                    <input type="text" class="form-control" id="endereco" name="endereco">
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="numero" class="form-label">Número</label>
+                                    <input type="text" class="form-control" id="numero" name="numero">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="bairro" class="form-label">Bairro</label>
+                                    <input type="text" class="form-control" id="bairro" name="bairro">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="cidade" class="form-label">Cidade</label>
+                                    <input type="text" class="form-control" id="cidade" name="cidade">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="uf" class="form-label">Estado (UF)</label>
+                                    <input type="text" class="form-control" id="uf" name="uf">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Restante do formulário (Status, Etapa, etc.) -->
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">Status *</label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="Em andamento">Em andamento</option>
+                                <option value="Concluído">Concluído</option>
+                                <option value="Aguardando aprovação">Aguardando aprovação</option>
+                                <option value="Suspenso">Suspenso</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="etapa_atual" class="form-label">Etapa Atual *</label>
+                            <select class="form-select" id="etapa_atual" name="etapa_atual" required>
+                                <option value="">Selecione a etapa atual</option>
+                                {% for etapa in etapas %}
+                                <option value="{{ etapa }}">{{ etapa }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="anotacoes" class="form-label">Anotações</label>
+                            <textarea class="form-control" id="anotacoes" name="anotacoes" rows="3"
+                                placeholder="Observações importantes sobre a obra"></textarea>
+                        </div>
+
+                        <!-- Informações sobre Sistemas -->
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6><i class="bi bi-info-circle"></i> Informações Importantes:</h6>
+                                <ul class="mb-0">
+                                    <li>O caminho da pasta será gerado automaticamente baseado na construtora e nome da
+                                        obra</li>
+                                    <li>Todos os sistemas de proteção serão criados automaticamente como "Pendente"</li>
+                                    <li>As etapas ERA serão criadas automaticamente para acompanhamento</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Sistemas de Proteção Disponíveis -->
+                        <div class="col-12">
+                            <h5><i class="bi bi-shield-check"></i> Sistemas de Proteção Disponíveis</h5>
+                            <div class="row">
+                                {% for sistema in sistemas_protecao %}
+                                <div class="col-md-6 col-lg-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="sistema_{{ sistema.id }}"
+                                            value="{{ sistema.id }}" checked disabled>
+                                        <label class="form-check-label" for="sistema_{{ sistema.id }}">
+                                            <strong>{{ sistema.nome }}</strong>
+                                            <br><small class="text-muted">{{ sistema.descricao }}</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i> Todos os sistemas serão incluídos automaticamente na
+                                obra.
+                            </small>
+                        </div>
+
+                        <!-- Etapas ERA -->
+                        <div class="col-12">
+                            <h5><i class="bi bi-clipboard-check"></i> Etapas ERA que serão criadas</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6><i class="bi bi-calculator text-primary"></i> Orçamento</h6>
+                                    <ul class="small text-muted">
+                                        <li>Solicitação recebida</li>
+                                        <li>Proposta enviada</li>
+                                        <li>Aguardando aprovação</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="bi bi-pencil-square text-info"></i> Projeto</h6>
+                                    <ul class="small text-muted">
+                                        <li>Projeto SLQA</li>
+                                        <li>Projeto Piso a Piso</li>
+                                        <li>Projeto Bandeja</li>
+                                        <li>Projeto Fachadeira / Guarda-corpo</li>
+                                        <li>ART emitida</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="bi bi-tools text-warning"></i> Execução</h6>
+                                    <ul class="small text-muted">
+                                        <li>SLQA executado</li>
+                                        <li>Piso a Piso executado</li>
+                                        <li>Fachadeira executada</li>
+                                        <li>Bandeja executada</li>
+                                        <li>Linha de vida executada</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="bi bi-cash-coin text-success"></i> Faturamento</h6>
+                                    <ul class="small text-muted">
+                                        <li>Primeira medição feita</li>
+                                        <li>NFS emitida</li>
+                                        <li>Pagamento confirmado</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-12">
+                                    <h6><i class="bi bi-check-circle text-success"></i> Encerramento</h6>
+                                    <ul class="small text-muted">
+                                        <li>Obra finalizada</li>
+                                        <li>Relatórios entregues</li>
+                                        <li>Feedback registrado</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="col-12">
+                            <hr>
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Criar Obra
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/auto_cadastro.js') }}"></script>
+{% endblock %}
