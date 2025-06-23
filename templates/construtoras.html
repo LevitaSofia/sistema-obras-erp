@@ -20,11 +20,26 @@
                 </h4>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('construtoras') }}" class="row g-3">
-                    <div class="col-md-8">
-                        <label for="nome" class="form-label">Nome da Construtora</label>
+                <form method="POST" action="{{ url_for('construtoras') }}" class="row g-3"
+                    onsubmit="return confirm('Tem certeza que deseja adicionar esta construtora?');">
+                    <div class="col-md-6">
+                        <label for="nome" class="form-label">Nome da Construtora*</label>
                         <input type="text" class="form-control" id="nome" name="nome" required
-                            placeholder="Ex: 001 CONSTRUTORA BILD">
+                            placeholder="Ex: CONSTRUTORA BILD">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="codigo" class="form-label">Código*</label>
+                        <input type="text" class="form-control" id="codigo" name="codigo" required
+                            placeholder="Ex: 001">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="cnpj" class="form-label">CNPJ</label>
+                        <input type="text" class="form-control" id="cnpj" name="cnpj" placeholder="Opcional">
+                    </div>
+                    <div class="col-md-8">
+                        <label for="razao_social" class="form-label">Razão Social</label>
+                        <input type="text" class="form-control" id="razao_social" name="razao_social"
+                            placeholder="Opcional">
                     </div>
                     <div class="col-md-4 d-flex align-items-end">
                         <button type="submit" class="btn btn-success w-100">
@@ -102,7 +117,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="formEditarConstrutora" method="POST">
+                <form id="formEditarConstrutora" method="POST"
+                    onsubmit="return confirm('Tem certeza que deseja salvar as alterações?');">
                     <div class="mb-3">
                         <label for="editNome" class="form-label">Nome da Construtora</label>
                         <input type="text" class="form-control" id="editNome" name="nome" required>
@@ -129,7 +145,7 @@
                 <p>Tem certeza que deseja excluir a construtora <strong id="nomeConstrutora"></strong>?</p>
                 <div class="alert alert-warning">
                     <i class="bi bi-exclamation-triangle"></i>
-                    <strong>Atenção:</strong> Esta ação também excluirá todas as obras vinculadas a esta construtora!
+                    <strong>Atenção:</strong> A construtora não pode ser excluída se houver obras vinculadas a ela.
                 </div>
             </div>
             <div class="modal-footer">

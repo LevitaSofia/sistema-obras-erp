@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Medições da Obra: {{ obra.nome }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2">Medições da Obra</h1>
+            <p class="lead text-muted">{{ obra.nome }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('medicoes.nova_medicao', obra_id=obra.id) }}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nova Medição
+            </a>
+            <a href="{{ url_for('visualizar_obra', id=obra.id) }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar para Obra
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h4>Histórico de Medições</h4>
+        </div>
+        <div class="card-body">
+            {% if medicoes %}
+            <div class="list-group">
+                {% for medicao in medicoes %}
+                <a href="{{ url_for('medicoes.visualizar_medicao', obra_id=obra.id, medicao_id=medicao.id) }}"
+                    class="list-group-item list-group-item-action flex-column align-items-start">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">Referência: {{ medicao.referencia }}</h5>
+                        <small>Data: {{ medicao.data|format_date }}</small>
+                    </div>
+                    <p class="mb-1">Responsável: {{ medicao.responsavel }}</p>
+                    <small class="text-muted">Clique para ver os detalhes.</small>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-journal-x display-3 text-muted"></i>
+                <h4 class="mt-3">Nenhuma medição encontrada</h4>
+                <p>Clique em "Nova Medição" para adicionar a primeira.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

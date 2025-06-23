@@ -20,9 +20,13 @@ cadastro_obra_bp = Blueprint(
 # --- Rotas da API Interna ---
 
 
-@cadastro_obra_bp.route("/api/consultar_cnpj/<cnpj>")
-def consultar_cnpj(cnpj):
-    """Consulta um CNPJ na BrasilAPI."""
+@cadastro_obra_bp.route("/api/consultar_cnpj", methods=['GET'])
+def consultar_cnpj():
+    """Consulta um CNPJ na BrasilAPI, recebido via query string."""
+    cnpj = request.args.get('cnpj')  # Pega o CNPJ da query string
+    if not cnpj:
+        return jsonify({"erro": "Parâmetro CNPJ não encontrado"}), 400
+
     cnpj_limpo = re.sub(r'\D', '', cnpj)
     if len(cnpj_limpo) != 14:
         return jsonify({"erro": "CNPJ inválido"}), 400
@@ -135,11 +139,22 @@ def cadastrar_obra():
             flash('Nome da Obra e Construtora são obrigatórios!', 'danger')
             return render_template("obras/cadastrar_obra.html", construtoras=construtoras)
 
-        # 2. Criar caminho da pasta
-        construtora = conn.execute(
-            'SELECT codigo, nome FROM construtoras WHERE id = ?', (construtora_id,)).fetchone()
-        base_path = f"G:/Meu Drive/000 ALTA TELAS/CONSTRUTORA EMP ALTA TELAS/{construtora['codigo']} {construtora['nome']}"
-        caminho_pasta = os.path.join(base_path, nome_obra)
+        # 2. Obter ou criar caminho da pasta
+        caminho_pasta_form = request.form.get('caminho_pasta')
+        if caminho_pasta_form:
+            # Usa o caminho informado pelo usuário se ele existir
+            caminho_pasta = caminho_pasta_form
+        else:
+            # Se não, cria um caminho padrão (fallback)
+            construtora = conn.execute(
+                'SELECT codigo, nome FROM construtoras WHERE id = ?', (construtora_id,)).fetchone()
+            base_path = f"G:/Meu Drive/000 ALTA TELAS"
+            # Monta o nome da pasta da construtora
+            nome_pasta_construtora = f"{construtora['codigo']} CONSTRUTORA {construtora['nome'].upper()}"
+            # Garante que o nome da obra é seguro para ser um nome de pasta
+            nome_obra_seguro = secure_filename(nome_obra)
+            caminho_pasta = os.path.join(
+                base_path, nome_pasta_construtora, nome_obra_seguro)
 
         # 3. Inserir no banco de dados
         try:

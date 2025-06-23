@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Construtora - {{ construtora.nome }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Editar Construtora</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('editar_construtora', id=construtora.id) }}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="nome" class="form-label">Nome da Construtora*</label>
+                        <input type="text" class="form-control" id="nome" name="nome" value="{{ construtora.nome }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="codigo" class="form-label">Código*</label>
+                        <input type="text" class="form-control" id="codigo" name="codigo" value="{{ construtora.codigo }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="cnpj" class="form-label">CNPJ</label>
+                        <input type="text" class="form-control" id="cnpj" name="cnpj" value="{{ construtora.cnpj or '' }}">
+                    </div>
+                    <div class="col-12">
+                        <label for="razao_social" class="form-label">Razão Social</label>
+                        <input type="text" class="form-control" id="razao_social" name="razao_social" value="{{ construtora.razao_social or '' }}">
+                    </div>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-end">
+                    <a href="{{ url_for('construtoras') }}" class="btn btn-secondary me-2">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

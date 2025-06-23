@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Medição: {{ medicao.referencia }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2">Detalhes da Medição</h1>
+            <p class="lead text-muted">Obra: {{ obra.nome }} | Referência: {{ medicao.referencia }}</p>
+        </div>
+        <div>
+            <button class="btn btn-info" disabled>
+                <i class="bi bi-file-earmark-pdf"></i> Gerar PDF (em breve)
+            </button>
+            <a href="{{ url_for('medicoes.listar_medicoes', obra_id=obra.id) }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar para Medições
+            </a>
+        </div>
+    </div>
+
+    <!-- Resumo da Medição -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Resumo</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4"><strong>Data:</strong> {{ medicao.data|format_date }}</div>
+                <div class="col-md-4"><strong>Responsável:</strong> {{ medicao.responsavel }}</div>
+                <div class="col-md-12 mt-2"><strong>Observações:</strong> {{ medicao.observacoes or 'Nenhuma' }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Itens Medidos -->
+    <div class="card">
+        <div class="card-header">
+            <h4>Itens Medidos</h4>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Item</th>
+                        <th class="text-end">Valor Orçado</th>
+                        <th class="text-end">Valor Medido</th>
+                        <th class="text-end">Saldo</th>
+                        <th class="text-center">% Medido</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in itens %}
+                    <tr>
+                        <td>{{ item.descricao_item }}</td>
+                        <td class="text-end">R$ {{ "%.2f"|format(item.valor_orcado) }}</td>
+                        <td class="text-end">R$ {{ "%.2f"|format(item.valor_medido) }}</td>
+                        <td class="text-end">R$ {{ "%.2f"|format(item.saldo) }}</td>
+                        <td class="text-center">
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar" role="progressbar" style="width: {{ item.porcentagem }}%;"
+                                    aria-valuenow="{{ item.porcentagem }}" aria-valuemin="0" aria-valuemax="100">
+                                    {{ "%.2f"|format(item.porcentagem) }}%
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">Nenhum item encontrado para esta medição.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light">
+                    <tr class="fw-bold">
+                        <td>TOTAIS</td>
+                        <td class="text-end">R$ {{ "%.2f"|format(totais.valor_orcado_total) }}</td>
+                        <td class="text-end">R$ {{ "%.2f"|format(totais.valor_medido_total) }}</td>
+                        <td class="text-end">R$ {{ "%.2f"|format(totais.saldo_total) }}</td>
+                        <td class="text-center">{{ "%.2f"|format(totais.porcentagem_media) }}%</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,472 +1,133 @@
 {% extends "base.html" %}
 
-{% block title %}{{ obra.nome }} - Painel ERA{% endblock %}
+{% block title %}{{ obra.nome }} - Painel Detalhado{% endblock %}
 
 {% block content %}
-<!-- Placeholder para alertas dinâmicos -->
-<div id="alert-placeholder"></div>
+<div class="container-fluid mt-4">
 
-<!-- Cabeçalho da Obra -->
-<div class="card mb-4">
-    <div class="card-header bg-primary text-white">
-        <div class="d-flex justify-content-between align-items-center">
-            <h3 class="card-title mb-0">
-                <i class="bi bi-clipboard-check"></i> Painel ERA - {{ obra.nome }}
-            </h3>
-            <div>
-                <a href="{{ url_for('medicoes.listar_e_adicionar', obra_id=obra.id) }}" class="btn btn-info btn-sm">
-                    <i class="bi bi-eye"></i> Visualizar Medições
-                </a>
-                <a href="{{ url_for('editar_obra', id=obra.id) }}" class="btn btn-warning btn-sm">
-                    <i class="bi bi-pencil"></i> Editar Obra
-                </a>
-                <a href="{{ url_for('index') }}" class="btn btn-secondary btn-sm">
-                    <i class="bi bi-arrow-left"></i> Voltar
-                </a>
-            </div>
+    <!-- Cabeçalho da Obra -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-light">
+            <h4 class="mb-0">
+                <i class="bi bi-building"></i> Detalhes da Obra: <strong>{{ obra.nome }}</strong>
+            </h4>
         </div>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <h5><i class="bi bi-building"></i> {{ obra.nome }}</h5>
-                <p class="mb-1"><strong>Construtora:</strong> {{ obra.construtora_nome }}</p>
-                <p class="mb-1"><strong>Cidade:</strong> {{ obra.cidade or 'Não informada' }}</p>
-                <p class="mb-1"><strong>Responsável:</strong> {{ obra.responsavel or 'Não definido' }}</p>
-            </div>
-            <div class="col-md-6">
-                <p class="mb-1">
-                    <strong>Status:</strong>
-                    {% if obra.status == 'Em andamento' %}
-                    <span class="badge bg-warning">
-                        <i class="bi bi-clock"></i> {{ obra.status }}
-                    </span>
-                    {% elif obra.status == 'Concluído' %}
-                    <span class="badge bg-success">
-                        <i class="bi bi-check-circle"></i> {{ obra.status }}
-                    </span>
-                    {% else %}
-                    <span class="badge bg-secondary">{{ obra.status }}</span>
-                    {% endif %}
-                </p>
-                <p class="mb-1">
-                    <strong>Etapa Atual:</strong>
-                    <span class="badge bg-info">{{ obra.etapa_atual }}</span>
-                </p>
-                <p class="mb-1">
-                    <strong>Caminho:</strong>
-                    <code class="small">{{ obra.caminho_pasta }}</code>
-                </p>
-                <button class="btn btn-sm btn-outline-primary" onclick="abrirPasta('{{ obra.caminho_pasta }}')">
-                    <i class="bi bi-folder2-open"></i> Abrir Pasta
-                </button>
-            </div>
-        </div>
-
-        {% if obra.anotacoes %}
-        <div class="row mt-3">
-            <div class="col-12">
-                <div class="alert alert-info">
-                    <h6><i class="bi bi-sticky"></i> Anotações:</h6>
-                    <p class="mb-0">{{ obra.anotacoes }}</p>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-2"><strong>Construtora:</strong> {{ obra.construtora_nome }}</p>
+                    <p class="mb-2"><strong>Cidade:</strong> {{ obra.cidade or 'Não informada' }}</p>
+                    <p class="mb-2"><strong>Responsável:</strong> {{ obra.responsavel or 'Não definido' }}</p>
                 </div>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-</div>
-
-<!-- Painel ERA -->
-<div class="row">
-    <!-- Etapas ERA -->
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h4 class="card-title mb-0">
-                    <i class="bi bi-clipboard-data"></i> Etapas ERA
-                </h4>
-            </div>
-            <div class="card-body">
-                {% for etapa_cat, itens in etapas_organizadas.items() %}
-                <div class="etapa-categoria mb-4">
-                    <h5 class="etapa-titulo">
-                        {% if etapa_cat == 'Orçamento' %}
-                        <i class="bi bi-calculator text-primary"></i>
-                        {% elif etapa_cat == 'Projeto' %}
-                        <i class="bi bi-pencil-square text-info"></i>
-                        {% elif etapa_cat == 'Execução' %}
-                        <i class="bi bi-tools text-warning"></i>
-                        {% elif etapa_cat == 'Faturamento' %}
-                        <i class="bi bi-cash-coin text-success"></i>
-                        {% elif etapa_cat == 'Encerramento' %}
-                        <i class="bi bi-check-circle text-success"></i>
+                <div class="col-md-6">
+                    <p class="mb-2">
+                        <strong>Status:</strong>
+                        {% if obra.status == 'Em andamento' %}
+                        <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> {{ obra.status }}</span>
+                        {% elif obra.status == 'Concluído' %}
+                        <span class="badge bg-success"><i class="bi bi-check-circle"></i> {{ obra.status }}</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ obra.status }}</span>
                         {% endif %}
-                        {{ etapa_cat }}
-                    </h5>
+                    </p>
+                    <p class="mb-2">
+                        <strong>Etapa Atual:</strong>
+                        <span class="badge bg-info text-dark">{{ obra.etapa_atual }}</span>
+                    </p>
+                    <p class="mb-0">
+                        <strong>Caminho:</strong>
+                        <code class="small user-select-all">{{ obra.caminho_pasta }}</code>
+                    </p>
+                </div>
+            </div>
+            {% if obra.anotacoes %}
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="alert alert-secondary mb-0">
+                        <h6 class="alert-heading"><i class="bi bi-sticky"></i> Anotações</h6>
+                        <p class="mb-0">{{ obra.anotacoes }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 
-                    <div class="etapa-itens">
-                        {% for item in itens %}
-                        <div class="etapa-item mb-2 p-2 border rounded">
-                            <div class="form-check d-flex align-items-center">
-                                <input class="form-check-input etapa-checkbox me-3" type="checkbox"
-                                    id="etapa_{{ etapa_cat }}_{{ loop.index }}" data-obra-id="{{ obra.id }}"
-                                    data-etapa="{{ etapa_cat }}" data-item="{{ item.item }}" {% if item.concluido
-                                    %}checked{% endif %}>
-
-                                <label class="form-check-label flex-grow-1"
-                                    for="etapa_{{ etapa_cat }}_{{ loop.index }}">
-                                    <span class="etapa-texto">{{ item.item }}</span>
-                                    {% if item.concluido %}
-                                    <small class="text-success ms-2">
-                                        <i class="bi bi-check-circle"></i> Concluído
-                                        {% if item.data_conclusao %}
-                                        em {{ item.data_conclusao.split(' ')[0] }}
+    <!-- Conteúdo principal com abas -->
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#era"><i class="bi bi-clipboard-data"></i>
+                        Painel ERA</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#sistemas"><i class="bi bi-shield-check"></i>
+                        Sistemas de Proteção</a>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content">
+                <!-- Aba Painel ERA -->
+                <div class="tab-pane fade show active" id="era">
+                    {% for etapa_cat, itens in etapas_organizadas.items() %}
+                    <div class="etapa-categoria mb-4">
+                        <h5 class="etapa-titulo border-bottom pb-2 mb-3">{{ etapa_cat }}</h5>
+                        <div class="etapa-itens">
+                            {% for item in itens %}
+                            <div class="etapa-item mb-2 p-2 border rounded-3">
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input etapa-checkbox me-3" type="checkbox"
+                                        id="etapa_{{ loop.index }}" {% if item.concluido %}checked{% endif %}>
+                                    <label class="form-check-label flex-grow-1" for="etapa_{{ loop.index }}">
+                                        {{ item.item }}
+                                        {% if item.concluido %}
+                                        <small class="text-success ms-2"><i class="bi bi-check-circle"></i> Concluído em
+                                            {{ item.data_conclusao.split(' ')[0] }}</small>
                                         {% endif %}
-                                    </small>
-                                    {% endif %}
-                                </label>
-
-                                <button class="btn btn-sm btn-outline-secondary ms-2"
-                                    onclick="editarEtapa('{{ obra.id }}', '{{ etapa_cat }}', '{{ item.item }}', {{ item.concluido|tojson }}, '{{ item.responsavel or '' }}', '{{ item.observacoes or '' }}')">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
+                                    </label>
+                                </div>
                             </div>
-
-                            {% if item.concluido and item.responsavel %}
-                            <div class="mt-1">
-                                <small class="text-muted">
-                                    <i class="bi bi-person"></i> {{ item.responsavel }}
-                                </small>
-                            </div>
-                            {% endif %}
-
-                            {% if item.concluido and item.observacoes %}
-                            <div class="mt-1">
-                                <small class="text-muted">
-                                    <i class="bi bi-chat"></i> {{ item.observacoes }}
-                                </small>
-                            </div>
-                            {% endif %}
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Sistemas de Proteção -->
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h4 class="card-title mb-0">
-                    <i class="bi bi-shield-check"></i> Sistemas de Proteção
-                </h4>
-            </div>
-            <div class="card-body">
-                {% for sistema in sistemas_obra %}
-                <div class="sistema-item mb-3 p-3 border rounded">
-                    <h6 class="sistema-nome">{{ sistema.nome }}</h6>
-                    <p class="small text-muted mb-2">{{ sistema.descricao }}</p>
-
-                    <select class="form-select form-select-sm sistema-status" data-obra-id="{{ obra.id }}"
-                        data-sistema-id="{{ sistema.id }}">
-                        <option value="Pendente" {% if sistema.status=='Pendente' %}selected{% endif %}>Pendente
-                        </option>
-                        <option value="Em andamento" {% if sistema.status=='Em andamento' %}selected{% endif %}>Em
-                            andamento</option>
-                        <option value="Concluído" {% if sistema.status=='Concluído' %}selected{% endif %}>Concluído
-                        </option>
-                    </select>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Resumo do Progresso -->
-        <div class="card mt-3">
-            <div class="card-header bg-info text-white">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-graph-up"></i> Resumo do Progresso
-                </h5>
-            </div>
-            <div class="card-body">
-                {% for etapa_cat, itens in etapas_organizadas.items() %}
-                {% set concluidos = itens|selectattr('concluido')|list|length %}
-                {% set total = itens|length %}
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <small>{{ etapa_cat }}</small>
-                        <small>{{ concluidos }}/{{ total }}</small>
+                <!-- Aba Sistemas de Proteção -->
+                <div class="tab-pane fade" id="sistemas">
+                    {% for sistema in sistemas_obra %}
+                    <div class="sistema-item mb-3 p-3 border rounded-3">
+                        <h6 class="sistema-nome">{{ sistema.nome }}</h6>
+                        <p class="small text-muted mb-2">{{ sistema.descricao }}</p>
+                        <span class="badge 
+                            {% if sistema.status == 'Em andamento' %} bg-warning text-dark
+                            {% elif sistema.status == 'Concluído' %} bg-success
+                            {% else %} bg-secondary
+                            {% endif %}">
+                            {{ sistema.status }}
+                        </span>
                     </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar" role="progressbar"
-                            style="width: {{ (concluidos / total * 100)|round(1) }}%"></div>
-                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal para editar etapa -->
-<div class="modal fade" id="modalEtapa" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Editar Etapa</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="formEtapa">
-                    <input type="hidden" id="etapa_obra_id">
-                    <input type="hidden" id="etapa_etapa">
-                    <input type="hidden" id="etapa_item">
-
-                    <div class="mb-3">
-                        <label class="form-label">Item:</label>
-                        <input type="text" id="etapa_item_texto" class="form-control" readonly>
-                    </div>
-
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="etapa_concluido">
-                            <label class="form-check-label" for="etapa_concluido">
-                                Marcar como concluído
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="etapa_responsavel" class="form-label">Responsável:</label>
-                        <input type="text" id="etapa_responsavel" class="form-control"
-                            placeholder="Nome do responsável">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="etapa_observacoes" class="form-label">Observações:</label>
-                        <textarea id="etapa_observacoes" class="form-control" rows="3"
-                            placeholder="Observações sobre a etapa"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="salvarEtapa()">Salvar</button>
-            </div>
-        </div>
-    </div>
+<!-- Rodapé Fixo com Ações -->
+<div class="card-footer text-end sticky-bottom bg-light py-3 border-top">
+    <a href="{{ url_for('medicoes.listar_e_adicionar', obra_id=obra.id) }}" class="btn btn-info">
+        <i class="bi bi-rulers"></i> Medições
+    </a>
+    <a href="{{ url_for('orcamento_bp.detalhar_orcamento', obra_id=obra.id) }}" class="btn btn-success">
+        <i class="bi bi-cash-coin"></i> Ver Orçamento
+    </a>
+    <a href="{{ url_for('editar_obra', id=obra.id) }}" class="btn btn-warning">
+        <i class="bi bi-pencil"></i> Editar Obra
+    </a>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar à Lista
+    </a>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // Função para abrir pasta
-    function abrirPasta(caminho) {
-        fetch('/abrir_pasta', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ caminho: caminho }),
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(data.message);
-                } else {
-                    showAlert(data.message, 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('Erro na requisição:', error);
-                showAlert('Erro de comunicação com o servidor.', 'danger');
-            });
-    }
-
-    // Função para editar etapa
-    function editarEtapa(obraId, etapa, item, concluido, responsavel, observacoes) {
-        document.getElementById('etapa_obra_id').value = obraId;
-        document.getElementById('etapa_etapa').value = etapa;
-        document.getElementById('etapa_item').value = item;
-        document.getElementById('etapa_item_texto').value = item;
-        document.getElementById('etapa_concluido').checked = concluido;
-        document.getElementById('etapa_responsavel').value = responsavel;
-        document.getElementById('etapa_observacoes').value = observacoes;
-
-        const modal = new bootstrap.Modal(document.getElementById('modalEtapa'));
-        modal.show();
-    }
-
-    // Função para salvar etapa
-    function salvarEtapa() {
-        const obraId = document.getElementById('etapa_obra_id').value;
-        const etapa = document.getElementById('etapa_etapa').value;
-        const item = document.getElementById('etapa_item').value;
-        const concluido = document.getElementById('etapa_concluido').checked;
-        const responsavel = document.getElementById('etapa_responsavel').value;
-        const observacoes = document.getElementById('etapa_observacoes').value;
-
-        fetch('/atualizar_etapa', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                obra_id: obraId,
-                etapa: etapa,
-                item: item,
-                concluido: concluido,
-                responsavel: responsavel,
-                observacoes: observacoes
-            }),
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(data.message);
-                    // Recarregar a página para atualizar os dados
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    showAlert(data.message, 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('Erro na requisição:', error);
-                showAlert('Erro de comunicação com o servidor.', 'danger');
-            });
-    }
-
-    // Event listeners para checkboxes de etapas
-    document.addEventListener('DOMContentLoaded', function () {
-        const checkboxes = document.querySelectorAll('.etapa-checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function () {
-                const obraId = this.dataset.obraId;
-                const etapa = this.dataset.etapa;
-                const item = this.dataset.item;
-                const concluido = this.checked;
-
-                fetch('/atualizar_etapa', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        obra_id: obraId,
-                        etapa: etapa,
-                        item: item,
-                        concluido: concluido,
-                        responsavel: '',
-                        observacoes: ''
-                    }),
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            showToast(data.message);
-                            // Recarregar a página para atualizar os dados
-                            setTimeout(() => {
-                                location.reload();
-                            }, 1000);
-                        } else {
-                            showAlert(data.message, 'danger');
-                            // Reverter o checkbox se houve erro
-                            this.checked = !concluido;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Erro na requisição:', error);
-                        showAlert('Erro de comunicação com o servidor.', 'danger');
-                        this.checked = !concluido;
-                    });
-            });
-        });
-
-        // Event listeners para selects de sistemas
-        const sistemaSelects = document.querySelectorAll('.sistema-status');
-        sistemaSelects.forEach(select => {
-            select.addEventListener('change', function () {
-                const obraId = this.dataset.obraId;
-                const sistemaId = this.dataset.sistemaId;
-                const status = this.value;
-
-                fetch('/atualizar_sistema', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        obra_id: obraId,
-                        sistema_id: sistemaId,
-                        status: status
-                    }),
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            showToast(data.message);
-                        } else {
-                            showAlert(data.message, 'danger');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Erro na requisição:', error);
-                        showAlert('Erro de comunicação com o servidor.', 'danger');
-                    });
-            });
-        });
-    });
-
-    // Função para exibir alertas dinâmicos
-    function showAlert(message, type = 'info') {
-        const placeholder = document.getElementById('alert-placeholder');
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = [
-            `<div class="alert alert-${type} alert-dismissible fade show" role="alert">`,
-            `   <div><i class="bi bi-exclamation-triangle-fill me-2"></i>${message}</div>`,
-            '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
-            '</div>'
-        ].join('');
-
-        placeholder.append(wrapper);
-
-        // Remove o alerta após 5 segundos
-        setTimeout(() => {
-            wrapper.remove();
-        }, 5000);
-    }
-
-    // Função para exibir Toasts
-    function showToast(message) {
-        const placeholder = document.getElementById('alert-placeholder');
-        const toastEl = document.createElement('div');
-        toastEl.className = 'toast align-items-center text-white bg-success border-0 fade show';
-        toastEl.setAttribute('role', 'alert');
-        toastEl.setAttribute('aria-live', 'assertive');
-        toastEl.setAttribute('aria-atomic', 'true');
-
-        toastEl.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">
-                <i class="bi bi-check-circle-fill me-2"></i>
-                ${message}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-    `;
-        placeholder.appendChild(toastEl);
-
-        const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
-        toast.show();
-
-        toastEl.addEventListener('hidden.bs.toast', () => {
-            toastEl.remove();
-        });
-    }
-</script>
 {% endblock %}

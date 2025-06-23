@@ -20,30 +20,26 @@
     <!-- Resumo Financeiro -->
     <div class="row g-3 mb-4 text-center">
         <div class="col-md-4">
-            <div class="card h-100">
+            <div class="card text-center text-white bg-info">
                 <div class="card-body">
-                    <h5 class="card-title text-primary"><i class="bi bi-file-earmark-text me-1"></i>Valor do Contrato
-                    </h5>
+                    <h6 class="card-title">Valor do Contrato</h6>
                     <p class="card-text fs-4 fw-bold">R$ {{ "%.2f"|format(valor_contrato)|replace('.', ',') }}</p>
-                    <small class="text-muted">Valor total acordado para a obra.</small>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card h-100">
+            <div class="card text-center text-white bg-warning">
                 <div class="card-body">
-                    <h5 class="card-title text-success"><i class="bi bi-check-circle-fill me-1"></i>Total Medido</h5>
+                    <h6 class="card-title">Saldo do Contrato</h6>
+                    <p class="card-text fs-4 fw-bold">R$ {{ "%.2f"|format(saldo_contrato)|replace('.', ',') }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center text-white bg-success">
+                <div class="card-body">
+                    <h6 class="card-title text-muted">Total Medido</h6>
                     <p class="card-text fs-4 fw-bold">R$ {{ "%.2f"|format(total_medido)|replace('.', ',') }}</p>
-                    <small class="text-muted">Soma de todas as medições realizadas.</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title text-warning"><i class="bi bi-cash-coin me-1"></i>Saldo Restante</h5>
-                    <p class="card-text fs-4 fw-bold">R$ {{ "%.2f"|format(saldo_restante)|replace('.', ',') }}</p>
-                    <small class="text-muted">Valor a ser faturado.</small>
                 </div>
             </div>
         </div>
@@ -55,7 +51,7 @@
             <h4 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Adicionar Nova Medição</h4>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ url_for('medicoes.listar_e_adicionar', obra_id=obra.id) }}" class="row g-3">
+            <form method="POST" action="{{ url_for('medicoes.adicionar_medicao', obra_id=obra.id) }}" class="row g-3">
                 <div class="col-md-3">
                     <label for="data_medicao" class="form-label">Data da Medição *</label>
                     <input type="date" class="form-control" id="data_medicao" name="data_medicao" required>

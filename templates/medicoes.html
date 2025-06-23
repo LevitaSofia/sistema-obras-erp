@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Medições da Obra: {{ obra.nome }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Cabeçalho Financeiro -->
+    <div class="card bg-light p-3 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="h4 mb-0"><i class="bi bi-clipboard-data"></i> Medições: {{ obra.nome }}</h2>
+            <a href="{{ url_for('visualizar_obra', id=obra.id) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar para Obra
+            </a>
+        </div>
+        <hr>
+        <div class="row text-center">
+            <div class="col-md-4">
+                <h6 class="text-muted">Valor do Contrato</h6>
+                <p class="h5 text-primary">R$ {{ "%.2f"|format(valor_contrato|float) }}</p>
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-muted">Total Acumulado Medido</h6>
+                <p class="h5 text-success">R$ {{ "%.2f"|format(total_acumulado|float) }}</p>
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-muted">Saldo Restante</h6>
+                <p class="h5 text-warning">R$ {{ "%.2f"|format(saldo_contrato|float) }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário para Adicionar Nova Medição -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Adicionar Nova Medição</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('medicoes.adicionar_medicao', obra_id=obra.id) }}" method="POST" id="form-medicao">
+                <!-- Dados Gerais da Medição -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="referencia" class="form-label">Referência</label>
+                        <input type="text" id="referencia" name="referencia" class="form-control"
+                            placeholder="Ex: Medição #1 - Maio/2025" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="data_medicao" class="form-label">Data da Medição</label>
+                        <input type="date" id="data_medicao" name="data_medicao" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="nota_fiscal" class="form-label">Nº da Nota Fiscal</label>
+                        <input type="text" id="nota_fiscal" name="nota_fiscal" class="form-control">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="observacoes" class="form-label">Observações Gerais</label>
+                    <textarea id="observacoes" name="observacoes" class="form-control" rows="2"></textarea>
+                </div>
+
+                <!-- Itens da Medição -->
+                <h6 class="mt-4">Itens da Medição</h6>
+                <table class="table table-bordered table-sm" id="tabela-itens">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item/Serviço</th>
+                            <th style="width: 100px;">Unidade</th>
+                            <th style="width: 150px;">Qtde. Contratada</th>
+                            <th style="width: 150px;">Qtde. Medida</th>
+                            <th style="width: 150px;">Valor Unitário (R$)</th>
+                            <th style="width: 50px;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Linhas de item serão adicionadas aqui por JS -->
+                    </tbody>
+                </table>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-adicionar-item">
+                    <i class="bi bi-plus"></i> Adicionar Item
+                </button>
+
+                <!-- Campo oculto para enviar os dados da tabela como JSON -->
+                <input type="hidden" name="itens_medicao" id="itens_medicao_json">
+
+                <hr>
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-save"></i> Salvar Medição Completa
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabela de Medições Existentes -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-list-ul"></i> Histórico de Medições</h5>
+        </div>
+        <div class="card-body">
+            {% if medicoes %}
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Referência</th>
+                        <th>Data</th>
+                        <th>Nota Fiscal</th>
+                        <th class="text-end">Valor Total (R$)</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for medicao in medicoes %}
+                    <tr>
+                        <td>{{ medicao.referencia }}</td>
+                        <td>{{ medicao.data_formatada }}</td>
+                        <td>{{ medicao.nota_fiscal or 'N/A' }}</td>
+                        <td class="text-end fw-bold">{{ "%.2f"|format(medicao.total_medicao|float) }}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-info btn-detalhes" data-medicao-id="{{ medicao.id }}"
+                                data-bs-toggle="modal" data-bs-target="#modal-detalhes">
+                                <i class="bi bi-eye"></i> Ver Detalhes
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-info text-center">Nenhuma medição registrada para esta obra.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Detalhes da Medição -->
+<div class="modal fade" id="modal-detalhes" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-detalhes-title">Detalhes da Medição</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modal-detalhes-body">
+                <!-- Conteúdo carregado via JS -->
+                <p class="text-center">Carregando...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- LÓGICA DO FORMULÁRIO DINÂMICO ---
+        const tabelaItensBody = document.querySelector('#tabela-itens tbody');
+        const btnAdicionarItem = document.getElementById('btn-adicionar-item');
+        const formMedicao = document.getElementById('form-medicao');
+        const hiddenInputJSON = document.getElementById('itens_medicao_json');
+
+        let itemCounter = 0;
+
+        function adicionarLinhaItem() {
+            itemCounter++;
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+            <td><input type="text" class="form-control form-control-sm item_servico" required></td>
+            <td><input type="text" class="form-control form-control-sm unidade" required></td>
+            <td><input type="number" step="0.01" class="form-control form-control-sm quantidade_contratada"></td>
+            <td><input type="number" step="0.01" class="form-control form-control-sm quantidade_medida" required></td>
+            <td><input type="number" step="0.01" class="form-control form-control-sm valor_unitario" required></td>
+            <td><button type="button" class="btn btn-sm btn-danger btn-remover-item"><i class="bi bi-trash"></i></button></td>
+        `;
+            tabelaItensBody.appendChild(newRow);
+        }
+
+        btnAdicionarItem.addEventListener('click', adicionarLinhaItem);
+
+        tabelaItensBody.addEventListener('click', function (e) {
+            if (e.target.closest('.btn-remover-item')) {
+                e.target.closest('tr').remove();
+            }
+        });
+
+        formMedicao.addEventListener('submit', function (e) {
+            const itens = [];
+            const linhas = tabelaItensBody.querySelectorAll('tr');
+
+            linhas.forEach(linha => {
+                const item = {
+                    item_servico: linha.querySelector('.item_servico').value,
+                    unidade: linha.querySelector('.unidade').value,
+                    quantidade_contratada: linha.querySelector('.quantidade_contratada').value || 0,
+                    quantidade_medida: linha.querySelector('.quantidade_medida').value,
+                    valor_unitario: linha.querySelector('.valor_unitario').value,
+                };
+                itens.push(item);
+            });
+
+            if (itens.length === 0) {
+                alert('Você deve adicionar pelo menos um item à medição.');
+                e.preventDefault(); // Impede o envio do formulário
+                return;
+            }
+
+            hiddenInputJSON.value = JSON.stringify(itens);
+        });
+
+        // --- LÓGICA DO MODAL DE DETALHES ---
+        const modalDetalhes = document.getElementById('modal-detalhes');
+        modalDetalhes.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const medicaoId = button.getAttribute('data-medicao-id');
+            const obraId = {{ obra.id }
+        };
+
+        const modalTitle = document.getElementById('modal-detalhes-title');
+        const modalBody = document.getElementById('modal-detalhes-body');
+
+        modalTitle.textContent = `Detalhes da Medição #${medicaoId}`;
+        modalBody.innerHTML = '<p class="text-center">Carregando...</p>';
+
+        fetch(`/obra/${obraId}/medicoes/${medicaoId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.erro) {
+                    modalBody.innerHTML = `<div class="alert alert-danger">${data.erro}</div>`;
+                    return;
+                }
+
+                let tableHtml = `
+                    <h6>Itens Medidos</h6>
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Item/Serviço</th>
+                                <th>Qtde. Medida</th>
+                                <th>Valor Unit. (R$)</th>
+                                <th>Valor Total (R$)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                let grandTotal = 0;
+                data.itens.forEach(item => {
+                    grandTotal += item.valor_total;
+                    tableHtml += `
+                        <tr>
+                            <td>${item.item_servico}</td>
+                            <td>${item.quantidade_medida} ${item.unidade}</td>
+                            <td>${parseFloat(item.valor_unitario).toFixed(2)}</td>
+                            <td>${parseFloat(item.valor_total).toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHtml += `
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-group-divider">
+                                <td colspan="3" class="text-end fw-bold">Total da Medição:</td>
+                                <td class="fw-bold">R$ ${parseFloat(grandTotal).toFixed(2)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                `;
+                modalBody.innerHTML = tableHtml;
+            })
+            .catch(err => {
+                modalBody.innerHTML = `<div class="alert alert-danger">Erro ao carregar detalhes.</div>`;
+            });
+    });
+
+});
+</script>
+{% endblock %}

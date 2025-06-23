@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Orçamento {{ orcamento.codigo }} - {{ orcamento.obra_nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">
+                Orçamento {{ orcamento.codigo }} - {{ orcamento.obra_nome }}
+            </h4>
+            <a href="{{ url_for('visualizar_obra', id=orcamento.obra_id) }}" class="btn-close" aria-label="Close"></a>
+        </div>
+
+        <div class="card-body">
+            <!-- Resumo Financeiro -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Resumo Financeiro</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <h6 class="text-muted">Valor Total do Contrato</h6>
+                            <h4 class="mb-0">R$ {{ "%.2f"|format(total_orcamento)|replace('.', ',') }}</h4>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted">Total Acumulado Medido</h6>
+                            <h4 class="mb-0 text-primary">R$ {{ "%.2f"|format(total_medido_geral)|replace('.', ',') }}
+                            </h4>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted">Saldo a Medir</h6>
+                            <h4 class="mb-0 text-success">R$ {{ "%.2f"|format(saldo_a_medir_valor)|replace('.', ',') }}
+                            </h4>
+                        </div>
+                    </div>
+                    <hr>
+                    <div>
+                        <label class="form-label">Progresso Financeiro ({{ "%.2f"|format(percentual_medido) }}%)</label>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                                style="width: {{ percentual_medido }}%;" aria-valuenow="{{ percentual_medido }}"
+                                aria-valuemin="0" aria-valuemax="100">
+                                <strong>{{ "%.1f"|format(percentual_medido) }}%</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Abas de Navegação -->
+            <ul class="nav nav-tabs" id="orcamentoTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="dados-tab" data-bs-toggle="tab" data-bs-target="#dados"
+                        type="button" role="tab" aria-controls="dados" aria-selected="true">
+                        <i class="bi bi-list-ul me-1"></i> Itens do Orçamento
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="medicao-fisica-tab" data-bs-toggle="tab"
+                        data-bs-target="#medicao-fisica" type="button" role="tab" aria-controls="medicao-fisica"
+                        aria-selected="false"><i class="bi bi-rulers me-1"></i> Medição Física</button>
+                </li>
+            </ul>
+
+            <!-- Conteúdo das Abas -->
+            <div class="tab-content pt-3" id="orcamentoTabContent">
+                <!-- Aba Itens do Orçamento -->
+                <div class="tab-pane fade show active" id="dados" role="tabpanel" aria-labelledby="dados-tab">
+
+                    <!-- Formulário para Adicionar Novo Item -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-plus-circle-fill me-2"></i>Adicionar Novo Item ao Orçamento
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST"
+                                action="{{ url_for('orcamento_bp.detalhar_orcamento', obra_id=orcamento.obra_id) }}"
+                                class="row g-3 align-items-end">
+                                <input type="hidden" name="orcamento_id" value="{{ orcamento.id }}">
+                                <div class="col-md-5">
+                                    <label for="descricao" class="form-label">Descrição*</label>
+                                    <input type="text" class="form-control" id="descricao" name="descricao" required>
+                                </div>
+                                <div class="col-md-1">
+                                    <label for="unidade" class="form-label">Unid.*</label>
+                                    <input type="text" class="form-control" id="unidade" name="unidade" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="quantidade" class="form-label">Quantidade*</label>
+                                    <input type="number" step="0.01" class="form-control" id="quantidade"
+                                        name="quantidade" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="valor_unitario" class="form-label">Valor Unit. (R$)*</label>
+                                    <input type="number" step="0.01" class="form-control" id="valor_unitario"
+                                        name="valor_unitario" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="bi bi-plus"></i> Adicionar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Itens do Orçamento -->
+                    <h5 class="mt-4">Planilha Orçamentária</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Descrição</th>
+                                    <th>Unidade</th>
+                                    <th>Quantidade</th>
+                                    <th>Valor Unit. (R$)</th>
+                                    <th>Valor Total (R$)</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if not itens %}
+                                <tr>
+                                    <td colspan="7" class="text-center">Nenhum item cadastrado neste orçamento.</td>
+                                </tr>
+                                {% else %}
+                                {% for item in itens %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ item.descricao }}</td>
+                                    <td>{{ item.unidade }}</td>
+                                    <td>{{ "%.2f"|format(item.quantidade)|replace('.', ',') }}</td>
+                                    <td>{{ "%.2f"|format(item.valor_unitario)|replace('.', ',') }}</td>
+                                    <td><strong>{{ "%.2f"|format(item.valor_total)|replace('.', ',') }}</strong></td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-outline-warning disabled"><i
+                                                class="bi bi-pencil"></i></a>
+                                        <a href="#" class="btn btn-sm btn-outline-danger disabled"><i
+                                                class="bi bi-trash"></i></a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% endif %}
+                            </tbody>
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <td colspan="5" class="text-end"><strong>VALOR TOTAL DO CONTRATO:</strong></td>
+                                    <td colspan="2"><strong>R$ {{ "%.2f"|format(total_orcamento)|replace('.', ',')
+                                            }}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Aba Medição Física -->
+                <div class="tab-pane fade" id="medicao-fisica" role="tabpanel" aria-labelledby="medicao-fisica-tab">
+
+                    <!-- Formulário para Criar Nova Medição -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-plus-circle-fill me-2"></i>Iniciar Nova Medição Mensal</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('medicoes.criar_medicao') }}"
+                                class="row g-3 align-items-end">
+                                <input type="hidden" name="orcamento_id" value="{{ orcamento.id }}">
+                                <input type="hidden" name="obra_id" value="{{ orcamento.obra_id }}">
+                                <div class="col-md-4">
+                                    <label for="periodo_referencia" class="form-label">Período de Referência*</label>
+                                    <input type="text" class="form-control" id="periodo_referencia"
+                                        name="periodo_referencia" required placeholder="Ex: Junho/2025">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="data_medicao" class="form-label">Data da Medição*</label>
+                                    <input type="date" class="form-control" id="data_medicao" name="data_medicao"
+                                        required>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-play-circle"></i> Iniciar Medição
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Medições Existentes -->
+                    <h5 class="mt-4">Histórico de Medições</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Nº</th>
+                                    <th>Período</th>
+                                    <th>Data</th>
+                                    <th>Status</th>
+                                    <th>Valor Medido (R$)</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if not medicoes %}
+                                <tr>
+                                    <td colspan="6" class="text-center">Nenhuma medição iniciada para este contrato.
+                                    </td>
+                                </tr>
+                                {% else %}
+                                {% for medicao in medicoes %}
+                                <tr>
+                                    <td>{{ medicao.numero_medicao }}</td>
+                                    <td>{{ medicao.referencia }}</td>
+                                    <td>{{ medicao.data_formatada }}</td>
+                                    <td>
+                                        {% if medicao.status == 'Fechada' %}
+                                        <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>{{
+                                            medicao.status }}</span>
+                                        {% elif medicao.status == 'Em Aberto' %}
+                                        <span class="badge bg-warning text-dark">{{ medicao.status }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ medicao.status or 'Pendente' }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><strong>R$ {{ "%.2f"|format(medicao.valor_medido)|replace('.', ',') }}</strong>
+                                    </td>
+                                    <td class="d-flex justify-content-center">
+                                        {% if medicao.status == 'Fechada' %}
+                                        <a href="{{ url_for('medicoes.detalhar_medicao', medicao_id=medicao.id) }}"
+                                            class="btn btn-sm btn-outline-info me-2" title="Visualizar Medição Fechada">
+                                            <i class="bi bi-eye-fill"></i> Visualizar
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" disabled>
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        {% else %}
+                                        <a href="{{ url_for('medicoes.detalhar_medicao', medicao_id=medicao.id) }}"
+                                            class="btn btn-sm btn-outline-primary me-2"
+                                            title="Editar / Detalhar Medição">
+                                            <i class="bi bi-pencil-square"></i> Medir
+                                        </a>
+                                        <form method="POST"
+                                            action="{{ url_for('medicoes.excluir_medicao', medicao_id=medicao.id) }}"
+                                            onsubmit="return confirm('Tem certeza que deseja excluir esta medição? A ação não pode ser desfeita.');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                title="Excluir Medição">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

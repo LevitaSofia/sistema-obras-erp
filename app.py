@@ -4,14 +4,16 @@ import os
 import json
 from datetime import datetime
 from itertools import groupby
+from collections import defaultdict
 
 # Modelos
 from models.obra_model import Obra
-from database import get_db_connection
+from database import get_db_connection, init_db
 
 # Blueprints
-from routes.medicoes import medicoes_bp
 from controllers.cadastro_obra_controller import cadastro_obra_bp
+from routes.cadastro_avancado import cadastro_bp as cadastro_avancado_bp
+from routes.medicoes import medicoes_bp
 from modules.orcamento.routes import orcamento_bp
 
 app = Flask(__name__)
@@ -94,7 +96,8 @@ def init_db():
             "numero": "TEXT",
             "bairro": "TEXT",
             "cep": "TEXT",
-            "uf": "TEXT"
+            "uf": "TEXT",
+            "cno": "TEXT"  # Adicionando a coluna CNO que faltava
         }
 
         for col_name, col_type in required_columns.items():
@@ -103,10 +106,132 @@ def init_db():
                     f"ALTER TABLE obras ADD COLUMN {col_name} {col_type}")
                 print(f"Coluna '{col_name}' adicionada à tabela 'obras'.")
 
-        # --- 4. Garante que as tabelas de medições existam ---
-        with open('database/init_medicoes.sql', 'r') as f:
-            sql_script = f.read()
-        cursor.executescript(sql_script)
+        # --- 4. Garante que a tabela 'orcamentos' exista ---
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS orcamentos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                obra_id INTEGER NOT NULL UNIQUE,
+                codigo TEXT,
+                tipo TEXT DEFAULT 'Orçamento Principal',
+                valor_custo REAL DEFAULT 0.0,
+                valor_venda REAL DEFAULT 0.0,
+                criacao_usuario TEXT,
+                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                data_modificacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (obra_id) REFERENCES obras (id) ON DELETE CASCADE
+            )
+        ''')
+
+        # --- 5. Trigger para criar um orçamento padrão para cada nova obra ---
+        cursor.execute('''
+            CREATE TRIGGER IF NOT EXISTS criar_orcamento_default
+            AFTER INSERT ON obras
+            FOR EACH ROW
+            BEGIN
+                INSERT INTO orcamentos (obra_id, codigo, criacao_usuario)
+                VALUES (NEW.id, 'ORC-' || substr('000000' || NEW.id, -6), 'SISTEMA');
+            END;
+        ''')
+
+        # --- 6. Back-fill: Garante que obras antigas tenham um orçamento ---
+        cursor.execute("""
+            INSERT INTO orcamentos (obra_id, codigo, criacao_usuario)
+            SELECT o.id, 'ORC-' || substr('000000' || o.id, -6), 'SISTEMA_BACKFILL'
+            FROM obras o
+            LEFT JOIN orcamentos orc ON o.id = orc.obra_id
+            WHERE orc.id IS NULL
+        """)
+
+        # --- 7. Garante que a tabela de itens de orçamento exista ---
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS orcamento_itens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                orcamento_id INTEGER NOT NULL,
+                item_num TEXT,
+                descricao TEXT NOT NULL,
+                unidade TEXT,
+                quantidade REAL DEFAULT 0,
+                valor_unitario REAL DEFAULT 0,
+                valor_total REAL GENERATED ALWAYS AS (quantidade * valor_unitario) STORED,
+                FOREIGN KEY (orcamento_id) REFERENCES orcamentos (id) ON DELETE CASCADE
+            )
+        ''')
+
+        # --- 8. Garante que a tabela de medicoes (cabeçalho) exista ---
+        # Unificando a estrutura nova e legada para ser a fonte única da verdade.
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS medicoes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                obra_id INTEGER NOT NULL,
+                numero_medicao INTEGER,
+                referencia TEXT,
+                nota_fiscal TEXT,
+                data_medicao DATE NOT NULL,
+                valor REAL,
+                status TEXT NOT NULL DEFAULT 'Em Aberto',
+                observacoes TEXT,
+                arquivo_path TEXT,
+                criacao_usuario TEXT,
+                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (obra_id) REFERENCES obras (id) ON DELETE CASCADE
+            )
+        ''')
+
+        # --- 8.1. Garante que colunas ausentes na tabela 'medicoes' sejam adicionadas ---
+        cursor.execute("PRAGMA table_info(medicoes)")
+        medicoes_columns = {column[1] for column in cursor.fetchall()}
+
+        required_medicoes_columns = {
+            "numero_medicao": "INTEGER",
+            "referencia": "TEXT",
+            "nota_fiscal": "TEXT",
+            "valor": "REAL",
+            "status": "TEXT",
+            "observacoes": "TEXT",
+            "arquivo_path": "TEXT",
+            "criacao_usuario": "TEXT"
+        }
+
+        for col_name, col_type in required_medicoes_columns.items():
+            if col_name not in medicoes_columns:
+                cursor.execute(
+                    f"ALTER TABLE medicoes ADD COLUMN {col_name} {col_type}")
+                print(f"Coluna '{col_name}' adicionada à tabela 'medicoes'.")
+
+        # Adicionar a coluna 'numero_medicao' à tabela 'medicoes' se não existir
+        if 'numero_medicao' not in medicoes_columns:
+            print("Aplicando migração: Adicionando 'numero_medicao' a 'medicoes'...")
+            cursor.execute(
+                'ALTER TABLE medicoes ADD COLUMN numero_medicao INTEGER;')
+            conn.commit()
+            print("'numero_medicao' adicionada com sucesso.")
+
+        # --- 9. Garante que a tabela de medicao_itens (detalhes) exista ---
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS medicao_itens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                medicao_id INTEGER NOT NULL,
+                orcamento_item_id INTEGER NOT NULL,
+                quantidade_medida REAL NOT NULL DEFAULT 0,
+                justificativa_aditivo TEXT,
+                FOREIGN KEY (medicao_id) REFERENCES medicoes (id) ON DELETE CASCADE,
+                FOREIGN KEY (orcamento_item_id) REFERENCES orcamento_itens (id) ON DELETE CASCADE
+            )
+        ''')
+
+        # Adicionar a coluna 'justificativa_aditivo' à tabela 'medicao_itens' se não existir
+        cursor.execute("PRAGMA table_info(medicao_itens)")
+        columns_medicao_itens = [column[1] for column in cursor.fetchall()]
+        if 'justificativa_aditivo' not in columns_medicao_itens:
+            print(
+                "Aplicando migração: Adicionando 'justificativa_aditivo' a 'medicao_itens'...")
+            cursor.execute(
+                'ALTER TABLE medicao_itens ADD COLUMN justificativa_aditivo TEXT;')
+            conn.commit()
+            print("'justificativa_aditivo' adicionada com sucesso.")
+
+        # --- 10. REMOVIDO: Execução do script SQL legado ---
+        # A estrutura legada foi mesclada na definição acima para evitar conflitos.
 
         conn.commit()
         print("Banco de dados verificado e atualizado com sucesso.")
@@ -120,8 +245,9 @@ def init_db():
 
 
 # --- Registro dos Blueprints ---
-app.register_blueprint(medicoes_bp)
 app.register_blueprint(cadastro_obra_bp)
+app.register_blueprint(cadastro_avancado_bp)
+app.register_blueprint(medicoes_bp, url_prefix='/medicao')
 app.register_blueprint(orcamento_bp)
 
 
@@ -261,55 +387,57 @@ def construtoras():
 def editar_construtora(id):
     """Edita uma construtora existente."""
     conn = get_db_connection()
-
     if request.method == 'POST':
         nome = request.form['nome']
-        codigo = request.form['codigo']
-        razao_social = request.form.get('razao_social')
-        cnpj = request.form.get('cnpj')
+        try:
+            conn.execute(
+                'UPDATE construtoras SET nome = ? WHERE id = ?', (nome, id))
+            conn.commit()
+            flash('Construtora atualizada com sucesso!', 'success')
+            return redirect(url_for('construtoras'))
+        except Exception as e:
+            flash(f"Erro ao atualizar construtora: {e}", "danger")
 
-        if not nome or not codigo:
-            flash('Nome e Código são campos obrigatórios.', 'danger')
-        else:
-            try:
-                conn.execute(
-                    'UPDATE construtoras SET nome = ?, codigo = ?, razao_social = ?, cnpj = ? WHERE id = ?',
-                    (nome, codigo, razao_social, cnpj, id)
-                )
-                conn.commit()
-                flash('Construtora atualizada com sucesso!', 'success')
-                conn.close()
-                return redirect(url_for('construtoras'))
-            except sqlite3.IntegrityError:
-                flash(
-                    'Já existe uma construtora com esse Nome, Código ou CNPJ.', 'danger')
-            except Exception as e:
-                flash(
-                    f'Ocorreu um erro ao atualizar a construtora: {e}', 'danger')
-
-    # GET
     construtora = conn.execute(
         'SELECT * FROM construtoras WHERE id = ?', (id,)).fetchone()
     conn.close()
-    if not construtora:
-        flash('Construtora não encontrada.', 'danger')
-        return redirect(url_for('construtoras'))
+    if construtora:
+        # A resposta para GET pode ser um JSON para preencher um modal via JS
+        return jsonify(dict(construtora))
+    return redirect(url_for('construtoras'))
 
-    return render_template('editar_construtora.html', construtora=construtora)
 
-
-@app.route('/construtoras/<int:id>/excluir', methods=['POST'])
+@app.route('/construtora/excluir/<int:id>', methods=['POST'])
 def excluir_construtora(id):
-    """Exclui uma construtora."""
+    """Exclui uma construtora, com verificação de integridade."""
+    conn = get_db_connection()
     try:
-        conn = get_db_connection()
+        # Tenta excluir a construtora
         conn.execute('DELETE FROM construtoras WHERE id = ?', (id,))
         conn.commit()
-        conn.close()
         flash('Construtora excluída com sucesso!', 'success')
+    except sqlite3.IntegrityError:
+        # Captura o erro que ocorre se houver obras vinculadas (foreign key constraint)
+        flash('Não é possível excluir esta construtora, pois ela possui obras associadas. Por favor, reatribua ou delete as obras primeiro.', 'danger')
     except Exception as e:
-        flash(f'Erro ao excluir construtora: {e}', 'danger')
+        # Captura quaisquer outros erros
+        flash(
+            f'Ocorreu um erro inesperado ao excluir a construtora: {e}', 'danger')
+    finally:
+        if conn:
+            conn.close()
     return redirect(url_for('construtoras'))
+
+
+@app.route('/obra/excluir/<int:id>', methods=['POST'])
+def excluir_obra(id):
+    """Exclui uma obra específica."""
+    try:
+        Obra.delete(id)
+        flash('Obra excluída com sucesso!', 'success')
+    except Exception as e:
+        flash(f'Erro ao excluir obra: {e}', 'danger')
+    return redirect(url_for('index'))
 
 
 @app.route('/editar_obra/<int:id>', methods=['GET', 'POST'])
@@ -394,6 +522,50 @@ def abrir_pasta():
         app.logger.error(
             f"Erro ao tentar abrir a pasta '{caminho_normalizado}': {e}")
         return jsonify({'error': f'Ocorreu um erro no servidor ao tentar abrir a pasta: {e}'}), 500
+
+
+@app.route('/faturamento_geral')
+def faturamento_geral():
+    """Página que exibe um resumo de todas as medições fechadas, agrupadas por mês."""
+    conn = get_db_connection()
+    conn.row_factory = sqlite3.Row
+
+    query = """
+        SELECT
+            strftime('%Y-%m', m.data_medicao) as mes_ano,
+            c.nome as construtora_nome,
+            o.nome as obra_nome,
+            m.numero_medicao,
+            m.referencia,
+            m.data_medicao,
+            m.valor as valor_faturado,
+            o.id as obra_id
+        FROM medicoes m
+        JOIN obras o ON m.obra_id = o.id
+        JOIN construtoras c ON o.construtora_id = c.id
+        WHERE m.status = 'Fechada'
+        ORDER BY mes_ano DESC, c.nome, o.nome, m.numero_medicao;
+    """
+    medicoes_fechadas = conn.execute(query).fetchall()
+
+    # Agrupar por mês
+    faturamento_por_mes = []
+    for mes, grupo in groupby(medicoes_fechadas, key=lambda x: x['mes_ano']):
+        medicoes_do_mes = list(grupo)
+        total_mes = sum(item['valor_faturado'] for item in medicoes_do_mes)
+        faturamento_por_mes.append({
+            'mes_ano': mes,
+            'medicoes': medicoes_do_mes,
+            'total_mes': total_mes
+        })
+
+    total_geral = sum(item['valor_faturado'] for item in medicoes_fechadas)
+
+    conn.close()
+
+    return render_template('faturamento_geral.html',
+                           faturamento_por_mes=faturamento_por_mes,
+                           total_geral=total_geral)
 
 
 if __name__ == '__main__':

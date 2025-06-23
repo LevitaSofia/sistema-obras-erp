@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Cadastro Avançado de Obra{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="bi bi-gear-wide-connected"></i> Cadastro Inteligente de Obra</h4>
+        </div>
+        <div class="card-body p-4">
+            <form id="form-cadastro-obra" action="{{ url_for('cadastro_obra_bp.adicionar_obra') }}" method="POST">
+                <!-- Seção CNPJ -->
+                <fieldset class="mb-4 p-3 border rounded">
+                    <legend class="w-auto px-2 h6">1. Dados da Construtora (via CNPJ)</legend>
+                    <div class="mb-3">
+                        <label for="cnpj" class="form-label">CNPJ da Construtora</label>
+                        <input type="text" id="cnpj" name="cnpj" class="form-control"
+                            placeholder="Digite o CNPJ e saia do campo para buscar">
+                        <div id="cnpj-feedback" class="form-text"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="razao_social" class="form-label">Razão Social</label>
+                            <input type="text" id="razao_social" name="razao_social" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="nome_fantasia" class="form-label">Nome Fantasia</label>
+                            <input type="text" id="nome_fantasia" name="nome_fantasia" class="form-control" readonly>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- Seção Endereço -->
+                <fieldset class="mb-4 p-3 border rounded">
+                    <legend class="w-auto px-2 h6">2. Endereço da Obra (via CEP)</legend>
+                    <div class="mb-3">
+                        <label for="cep" class="form-label">CEP da Obra</label>
+                        <input type="text" id="cep" name="cep" class="form-control"
+                            placeholder="Digite o CEP para buscar o endereço">
+                        <div id="cep-feedback" class="form-text"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="logradouro" class="form-label">Logradouro (Rua, Av.)</label>
+                            <input type="text" id="logradouro" name="logradouro" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="numero" class="form-label">Número</label>
+                            <input type="text" id="numero" name="numero" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-5 mb-3">
+                            <label for="bairro" class="form-label">Bairro</label>
+                            <input type="text" id="bairro" name="bairro" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-5 mb-3">
+                            <label for="cidade" class="form-label">Cidade</label>
+                            <input type="text" id="cidade" name="cidade" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="uf" class="form-label">UF</label>
+                            <input type="text" id="uf" name="uf" class="form-control" readonly>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- Seção Detalhes da Obra -->
+                <fieldset class="p-3 border rounded">
+                    <legend class="w-auto px-2 h6">3. Detalhes Finais</legend>
+                    <div class="mb-3">
+                        <label for="nome_obra" class="form-label">Nome da Obra (sugerido)</label>
+                        <input type="text" id="nome_obra" name="nome" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="valor_contrato" class="form-label">Valor do Contrato (R$)</label>
+                        <input type="text" id="valor_contrato" name="valor_contrato" class="form-control"
+                            placeholder="Ex: 150000.00">
+                    </div>
+                    <div class="mb-3">
+                        <label for="responsavel" class="form-label">Responsável Técnico</label>
+                        <input type="text" id="responsavel" name="responsavel" class="form-control">
+                    </div>
+                </fieldset>
+
+                <input type="hidden" id="caminho_pasta_base" name="caminho_pasta_base"
+                    value="G:\\Meu Drive\\000 ALTA TELAS\\ALGORITOS AQUI NESTA PASTAS\\0001 BANCO DE DADOS PASTAS DE EMPRESA\\obras">
+                <input type="hidden" id="caminho_pasta_final" name="caminho_pasta">
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-check-circle"></i> Cadastrar Obra
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const cnpjInput = document.getElementById('cnpj');
+        const cepInput = document.getElementById('cep');
+        const cnpjFeedback = document.getElementById('cnpj-feedback');
+        const cepFeedback = document.getElementById('cep-feedback');
+        const nomeObraInput = document.getElementById('nome_obra');
+        const razaoSocialInput = document.getElementById('razao_social');
+        const nomeFantasiaInput = document.getElementById('nome_fantasia');
+
+        // Função para mostrar feedback ao usuário
+        function showFeedback(element, message, isError = false) {
+            element.textContent = message;
+            element.className = isError ? 'form-text text-danger' : 'form-text text-success';
+        }
+
+        // Evento para buscar CNPJ
+        cnpjInput.addEventListener('blur', function () {
+            const cnpj = this.value.replace(/\D/g, '');
+            if (cnpj.length !== 14) return;
+
+            showFeedback(cnpjFeedback, 'Buscando dados do CNPJ...', false);
+            fetch(`/api/consultar-cnpj/${cnpj}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Falha na resposta da API');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.erro) {
+                        showFeedback(cnpjFeedback, data.erro, true);
+                        return;
+                    }
+                    showFeedback(cnpjFeedback, 'CNPJ encontrado e dados preenchidos!', false);
+                    razaoSocialInput.value = data.razao_social || '';
+                    nomeFantasiaInput.value = data.nome_fantasia || '';
+
+                    // Sugere o nome da obra
+                    const nomeSugerido = `${data.nome_fantasia || data.razao_social} - ${data.municipio}`;
+                    nomeObraInput.value = nomeSugerido;
+
+                })
+                .catch(error => {
+                    showFeedback(cnpjFeedback, 'Erro ao consultar o CNPJ. Tente novamente.', true);
+                });
+        });
+
+        // Evento para buscar CEP
+        cepInput.addEventListener('blur', function () {
+            const cep = this.value.replace(/\D/g, '');
+            if (cep.length !== 8) return;
+
+            showFeedback(cepFeedback, 'Buscando endereço...', false);
+            fetch(`/api/consultar-cep/${cep}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Falha na resposta da API');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.erro) {
+                        showFeedback(cepFeedback, data.erro, true);
+                        return;
+                    }
+                    showFeedback(cepFeedback, 'CEP encontrado!', false);
+                    document.getElementById('logradouro').value = data.logradouro || '';
+                    document.getElementById('bairro').value = data.bairro || '';
+                    document.getElementById('cidade').value = data.localidade || '';
+                    document.getElementById('uf').value = data.uf || '';
+                })
+                .catch(error => {
+                    showFeedback(cepFeedback, 'Erro ao consultar o CEP. Tente novamente.', true);
+                });
+        });
+
+        // Atualiza o caminho da pasta ao submeter o formulário
+        document.getElementById('form-cadastro-obra').addEventListener('submit', function () {
+            const nomeFinalObra = nomeObraInput.value.trim();
+            const caminhoBase = document.getElementById('caminho_pasta_base').value;
+            if (nomeFinalObra) {
+                document.getElementById('caminho_pasta_final').value = `${caminhoBase}\\${nomeFinalObra}`;
+            }
+        });
+    });
+</script>
+{% endblock %}

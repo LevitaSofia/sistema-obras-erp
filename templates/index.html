@@ -234,6 +234,13 @@
 
 {% block extra_js %}
 <script>
+    function confirmarExclusao(id, nome) {
+        document.getElementById('nomeObra').textContent = nome;
+        document.getElementById('formExclusao').action = '/obra/excluir/' + id;
+        const modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
+        modal.show();
+    }
+
     function showAlert(message, category = 'danger') {
         const placeholder = document.getElementById('alert-placeholder');
         const wrapper = document.createElement('div');
@@ -267,17 +274,6 @@
         } catch (error) {
             console.error('Erro ao tentar abrir pasta:', error);
             showAlert('Erro de comunicação com o servidor.');
-        }
-    }
-
-    function confirmarExclusao(id, nome) {
-        if (confirm(`Tem certeza que deseja excluir a obra "${nome}"? Esta ação não pode ser desfeita.`)) {
-            // Lógica para enviar o formulário de exclusão
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/excluir/' + id;
-            document.body.appendChild(form);
-            form.submit();
         }
     }
 

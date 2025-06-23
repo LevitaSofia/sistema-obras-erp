@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Medição - {{ obra.nome }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            background-color: #f0f2f5;
+        }
+
+        .report-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .report-header {
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .report-header h4 {
+            font-weight: bold;
+        }
+
+        .table-report {
+            font-size: 0.8rem;
+        }
+
+        .table-report th {
+            background-color: #e9ecef;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #b7b7b7;
+        }
+
+        .table-report td {
+            vertical-align: middle;
+            border: 1px solid #b7b7b7;
+        }
+
+        .table-report .input-group {
+            flex-wrap: nowrap;
+        }
+
+        .form-control-sm {
+            height: calc(1.5em + 0.5rem + 2px);
+            padding: 0.25rem 0.5rem;
+        }
+
+        .group-header {
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+
+        .text-end {
+            text-align: right;
+        }
+
+        .action-buttons {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            text-align: right;
+        }
+
+        @media print {
+            body {
+                background-color: #fff;
+            }
+
+            .report-container {
+                box-shadow: none;
+                border: none;
+                margin: 0;
+                max-width: 100%;
+            }
+
+            .action-buttons,
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="report-container">
+        <!-- CABEÇALHO DO RELATÓRIO -->
+        <div class="report-header row">
+            <div class="col-8">
+                <h4>ALTA TELAS REDES DE PROTEÇÃO LTDA</h4>
+                <p class="small mb-0">R. Gonçalves e Cianda Limirio, 115 - CRISTO REDENTOR - Ribeirão Preto/SP</p>
+                <p class="small mb-0">projetos@altatelas.com - CNPJ: 20.017.812/0001-57 - altatelas.com</p>
+            </div>
+            <div class="col-4 text-end">
+                <strong>{{ medicao.data_medicao | format_date }}</strong>
+                <p>Página 1/1</p>
+            </div>
+        </div>
+
+        <h5>Relatório posição de medição</h5>
+        <table class="table table-bordered table-sm mb-3">
+            <tr>
+                <td class="w-50"><strong>Cliente:</strong> {{ obra.construtora_nome }}</td>
+                <td class="w-50"><strong>Obra:</strong> {{ obra.nome }} - CNPJ: {{ obra.cnpj }} - CNO: {{ obra.cno }}
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Período:</strong> {{ medicao.referencia }}</td>
+                <td><strong>Orçamento:</strong> {{ orcamento.codigo }}</td>
+            </tr>
+        </table>
+
+        <!-- Corpo do Card com o Formulário Principal -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Formulário de Medição</h5>
+            </div>
+            <div class="card-body">
+                <form id="form-medicao-itens" method="POST"
+                    action="{{ url_for('.detalhar_medicao', medicao_id=medicao.id) }}">
+                    <!-- Tabela de Itens -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover table-sm" id="medicao-table">
+                            <thead>
+                                <tr class="table-dark">
+                                    <th rowspan="2" class="align-middle text-center">Item</th>
+                                    <th rowspan="2" class="align-middle">Descrição</th>
+                                    <th rowspan="2" class="align-middle text-center">Unid.</th>
+                                    <th colspan="2" class="text-center">Contrato</th>
+                                    <th colspan="2" class="text-center table-info-light">Anterior</th>
+                                    <th colspan="2" class="text-center table-warning-light">Atual</th>
+                                    <th colspan="2" class="text-center table-primary-light">Acumulado</th>
+                                    <th colspan="2" class="text-center table-success-light">Saldo</th>
+                                </tr>
+                                <tr class="table-dark">
+                                    <th class="text-center">Quant.</th>
+                                    <th class="text-center">%</th>
+                                    <th class="text-center">Quant.</th>
+                                    <th class="text-center">%</th>
+                                    <th class="text-center">Quant.</th>
+                                    <th class="text-center">%</th>
+                                    <th class="text-center">Quant.</th>
+                                    <th class="text-center">%</th>
+                                    <th class="text-center">Quant.</th>
+                                    <th class="text-center">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in itens %}
+                                <tr>
+                                    <td class="text-center">{{ loop.index }}</td>
+                                    <td>{{ item.descricao }}</td>
+                                    <td class="text-center">{{ item.unidade }}</td>
+
+                                    <!-- Contrato -->
+                                    <td class="text-end">{{ "%.2f"|format(item.qtd_contrato)|replace('.', ',') }}</td>
+                                    <td class="text-end table-secondary">{{ "%.2f"|format(item.perc_contrato) }}%</td>
+
+                                    <!-- Anterior -->
+                                    <td class="text-end">{{ "%.2f"|format(item.qtd_anterior)|replace('.', ',') }}</td>
+                                    <td class="text-end table-secondary">{{ "%.2f"|format(item.perc_anterior) }}%</td>
+
+                                    <!-- Atual (Input) -->
+                                    <td class="text-end bg-light">
+                                        <input type="text" name="quantidade_medida_{{ item.id }}"
+                                            class="form-control form-control-sm text-end"
+                                            value="{{ '%.2f'|format(item.qtd_atual)|replace('.', ',') if item.qtd_atual > 0 else '' }}"
+                                            oninput="this.value = this.value.replace(/[^0-9,.]/g, '').replace(',', '.');"
+                                            autocomplete="off" {% if medicao.status=='Fechada' %}disabled{% endif %}>
+                                    </td>
+                                    <td class="text-end table-secondary bg-light align-middle">
+                                        {{ "%.2f"|format(item.perc_atual) }}%
+                                    </td>
+
+                                    <!-- Acumulado -->
+                                    <td class="text-end {% if item.is_extrapolated %}text-danger fw-bold{% endif %}">
+                                        {{ "%.2f"|format(item.qtd_acumulada)|replace('.', ',') }}
+                                    </td>
+                                    <td
+                                        class="text-end table-secondary {% if item.is_extrapolated %}text-danger fw-bold{% endif %}">
+                                        {{ "%.2f"|format(item.perc_acumulado) }}%
+                                    </td>
+
+                                    <!-- Saldo -->
+                                    <td class="text-end {% if item.is_extrapolated %}text-danger fw-bold{% endif %}">
+                                        {{ "%.2f"|format(item.qtd_saldo)|replace('.', ',') }}
+                                    </td>
+                                    <td
+                                        class="text-end table-secondary {% if item.is_extrapolated %}text-danger fw-bold{% endif %}">
+                                        {{ "%.2f"|format(item.perc_saldo) }}%
+                                    </td>
+                                </tr>
+                                <tr id="justificativa_row_{{ item.id }}"
+                                    class="justificativa-row {% if not item.justificativa_aditivo %}d-none{% endif %}">
+                                    <td colspan="2"></td>
+                                    <td colspan="11">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-warning"><i
+                                                    class="bi bi-exclamation-triangle-fill"></i>&nbsp; Justificativa do
+                                                Aditivo:</span>
+                                            <input type="text" name="justificativa_aditivo_{{ item.id }}"
+                                                id="justificativa_input_{{ item.id }}" class="form-control"
+                                                value="{{ item.justificativa_aditivo or '' }}"
+                                                placeholder="Ex: Aprovado por [Nome] em [Data]" {% if
+                                                medicao.status=='Fechada' %}disabled{% endif %}>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <th colspan="3" class="text-end">TOTAIS (VALOR)</th>
+                                    <td colspan="2" class="text-end">R$ {{ "%.2f"|format(totais.orcado)|replace('.',
+                                        ',') }}
+                                    </td>
+                                    <td colspan="2" class="text-end">R$ {{ "%.2f"|format(totais.anterior)|replace('.',
+                                        ',') }}
+                                    </td>
+                                    <td colspan="2" class="text-end">R$ {{ "%.2f"|format(totais.atual)|replace('.', ',')
+                                        }}</td>
+                                    <td colspan="2" class="text-end">R$ {{ "%.2f"|format(totais.acumulado)|replace('.',
+                                        ',') }}
+                                    </td>
+                                    <td colspan="2" class="text-end">R$ {{ "%.2f"|format(totais.saldo)|replace('.', ',')
+                                        }}</td>
+                                </tr>
+                                <tr>
+                                    <th colspan="3" class="text-end">TOTAIS (%)</th>
+                                    <td colspan="2" class="text-end">{{ "%.2f"|format(totais.perc_orcado) }}%</td>
+                                    <td colspan="2" class="text-end">{{ "%.2f"|format(totais.perc_anterior) }}%</td>
+                                    <td colspan="2" class="text-end">{{ "%.2f"|format(totais.perc_atual) }}%</td>
+                                    <td colspan="2" class="text-end">{{ "%.2f"|format(totais.perc_acumulado) }}%</td>
+                                    <td colspan="2" class="text-end">{{ "%.2f"|format(totais.perc_saldo) }}%</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <a href="{{ url_for('orcamento_bp.detalhar_orcamento', obra_id=obra.id) }}"
+                            class="btn btn-secondary">
+                            <i class="bi bi-arrow-left-circle-fill"></i> Voltar para Orçamento
+                        </a>
+                    </div>
+                    <!-- Botões de Ação -->
+                    <div class="d-flex justify-content-end align-items-center">
+                        {% if medicao.status == 'Fechada' %}
+                        <button type="button" class="btn btn-secondary me-2" disabled>
+                            <i class="bi bi-lock-fill"></i> Fechado
+                        </button>
+                        <span class="badge bg-success p-2 fs-6">
+                            <i class="bi bi-check-circle-fill"></i> Medição Faturada
+                        </span>
+                        {% else %}
+                        <!-- Formulário para Fechar a Medição -->
+                        <form method="POST" action="{{ url_for('.fechar_medicao', medicao_id=medicao.id) }}"
+                            class="d-inline me-2"
+                            onsubmit="return confirm('Tem certeza que deseja fechar esta medição? A ação não pode ser desfeita e os valores serão faturados.');">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-lock-fill"></i> Fechar e Faturar
+                            </button>
+                        </form>
+                        <!-- Formulário para Salvar a Medição (submete ao form principal) -->
+                        <button type="submit" class="btn btn-success" form="form-medicao-itens">
+                            <i class="bi bi-check-circle-fill"></i> Salvar Medição
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Aditivo -->
+    <div class="modal fade" id="aditivoModal" tabindex="-1" aria-labelledby="aditivoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="aditivoModalLabel"><i
+                            class="bi bi-exclamation-triangle-fill text-warning"></i> Item Extrapolado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    A quantidade medida para este item ultrapassa o valor contratado. Isso será considerado um
+                    <strong>aditivo</strong>.
+                    <br><br>
+                    Por favor, forneça uma justificativa (ex: aprovado, data, etc.).
+                    <textarea id="modalJustificativaInput" class="form-control mt-2" rows="3"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        id="modalCancelarBtn">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="modalConfirmarBtn">Confirmar Aditivo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Se a medição estiver fechada, não há necessidade de configurar os listeners de aditivo.
+            if ("{{ medicao.status }}" === "Fechada") {
+                return;
+            }
+
+            const aditivoModal = new bootstrap.Modal(document.getElementById('aditivoModal'));
+            let currentItemInfo = {};
+
+            document.querySelectorAll('input[name^="quantidade_medida_"]').forEach(input => {
+                input.addEventListener('change', function () {
+                    const itemId = this.name.split('_').pop();
+                    const qtdContrato = parseFloat(document.querySelector(`#item_info_${itemId}`).dataset.contrato);
+                    const qtdAnterior = parseFloat(document.querySelector(`#item_info_${itemId}`).dataset.anterior);
+                    const qtdAtual = parseFloat(this.value.replace(',', '.')) || 0;
+
+                    if ((qtdAnterior + qtdAtual) > qtdContrato) {
+                        const justificativaRow = document.getElementById(`justificativa_row_${itemId}`);
+                        const justificativaInput = document.getElementById(`justificativa_input_${itemId}`);
+
+                        // Prepara o modal
+                        currentItemInfo = {
+                            itemId: itemId,
+                            inputOriginal: this
+                        };
+                        document.getElementById('modalJustificativaInput').value = justificativaInput.value;
+
+                        aditivoModal.show();
+                    }
+                });
+            });
+
+            document.getElementById('modalConfirmarBtn').addEventListener('click', function () {
+                const justificativaText = document.getElementById('modalJustificativaInput').value;
+                const itemId = currentItemInfo.itemId;
+
+                const justificativaInput = document.getElementById(`justificativa_input_${itemId}`);
+                const justificativaRow = document.getElementById(`justificativa_row_${itemId}`);
+
+                justificativaInput.value = justificativaText;
+                if (justificativaText) {
+                    justificativaRow.classList.remove('d-none');
+                }
+                aditivoModal.hide();
+            });
+
+            // Se o usuário cancelar no modal, limpa o campo que causou o aditivo para evitar confusão.
+            document.getElementById('modalCancelarBtn').addEventListener('click', function () {
+                if (currentItemInfo.inputOriginal) {
+                    // Não limpa mais o input para permitir edição
+                }
+            });
+
+            // Adiciona spans com dados para o JS ler, em cada linha de item
+            document.querySelectorAll('tbody tr[id^="justificativa_row_"]').forEach((el, i) => {
+                const item = {{ itens| tojson
+            }}[i];
+        const infoSpan = document.createElement('span');
+        infoSpan.id = `item_info_${item.id}`;
+        infoSpan.dataset.contrato = item.qtd_contrato;
+        infoSpan.dataset.anterior = item.qtd_anterior;
+        infoSpan.style.display = 'none';
+        el.parentNode.insertBefore(infoSpan, el);
+        });
+    });
+    </script>
+
+</body>
+
+</html>

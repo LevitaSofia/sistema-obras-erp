@@ -20,13 +20,18 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleSpinner(cnpjSpinner, true);
         
         try {
-            const response = await fetch('/api/consultar_cnpj', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cnpj: cnpj })
+            // Constrói a URL com o CNPJ como parte do caminho (path parameter)
+            const url = `/api/consultar-cnpj/${cnpj}`;
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
             });
             
-            if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.erro || `Erro na API: ${response.statusText}`);
+            }
             
             const data = await response.json();
             if (data.erro) {
