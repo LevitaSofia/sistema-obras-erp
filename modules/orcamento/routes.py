@@ -110,3 +110,92 @@ def detalhar_orcamento(obra_id):
                            total_medido_geral=total_medido_geral,
                            saldo_a_medir_valor=saldo_a_medir_valor,
                            percentual_medido=percentual_medido)
+
+
+@orcamento_bp.route('/orcamento/item/<int:item_id>/editar', methods=['GET', 'POST'])
+def editar_item_orcamento(item_id):
+    """
+    Edita um item existente no orçamento.
+    """
+    conn = get_db_connection()
+    # Busca o item para obter o obra_id para o redirecionamento
+    item_orcamento = conn.execute(
+        "SELECT o.obra_id FROM orcamento_itens oi JOIN orcamentos o ON oi.orcamento_id = o.id WHERE oi.id = ?", (item_id,)).fetchone()
+    if not item_orcamento:
+        conn.close()
+        abort(404, "Item do orçamento não encontrado.")
+
+    obra_id = item_orcamento['obra_id']
+
+    if request.method == 'POST':
+        descricao = request.form.get('descricao')
+        unidade = request.form.get('unidade')
+        quantidade = request.form.get('quantidade', type=float)
+        valor_unitario = request.form.get('valor_unitario', type=float)
+
+        if not all([descricao, unidade, quantidade, valor_unitario]):
+            flash('Todos os campos são obrigatórios.', 'danger')
+            return redirect(url_for('.editar_item_orcamento', item_id=item_id))
+
+        try:
+            conn.execute(
+                """
+                UPDATE orcamento_itens 
+                SET descricao = ?, unidade = ?, quantidade = ?, valor_unitario = ?
+                WHERE id = ?
+                """,
+                (descricao, unidade, quantidade, valor_unitario, item_id)
+            )
+            conn.commit()
+            flash('Item do orçamento atualizado com sucesso!', 'success')
+            return redirect(url_for('.detalhar_orcamento', obra_id=obra_id))
+        except sqlite3.Error as e:
+            flash(f'Erro ao atualizar o item: {e}', 'danger')
+            conn.close()
+            return redirect(url_for('.editar_item_orcamento', item_id=item_id))
+
+    # Método GET: Busca os dados atuais do item para preencher o formulário
+    item_data = conn.execute(
+        "SELECT * FROM orcamento_itens WHERE id = ?", (item_id,)).fetchone()
+    conn.close()
+    if not item_data:
+        abort(404)
+
+    return render_template('orcamento/editar_item_orcamento.html', item=item_data, obra_id=obra_id)
+
+
+@orcamento_bp.route('/orcamento/item/<int:item_id>/excluir', methods=['POST'])
+def excluir_item_orcamento(item_id):
+    """
+    Exclui um item do orçamento.
+    """
+    conn = get_db_connection()
+    # Busca o obra_id antes de deletar, para poder redirecionar
+    item_orcamento = conn.execute(
+        "SELECT o.obra_id FROM orcamento_itens oi JOIN orcamentos o ON oi.orcamento_id = o.id WHERE oi.id = ?", (item_id,)).fetchone()
+    if not item_orcamento:
+        conn.close()
+        flash('Item não encontrado.', 'danger')
+        return redirect(request.referrer or url_for('index'))
+
+    obra_id = item_orcamento['obra_id']
+
+    try:
+        # Verifica se o item não está em alguma medição
+        check_uso = conn.execute(
+            "SELECT 1 FROM medicao_itens WHERE orcamento_item_id = ?", (item_id,)).fetchone()
+        if check_uso:
+            flash(
+                'Não é possível excluir este item, pois ele já foi utilizado em uma ou mais medições.', 'danger')
+            conn.close()
+            return redirect(url_for('.detalhar_orcamento', obra_id=obra_id))
+
+        conn.execute("DELETE FROM orcamento_itens WHERE id = ?", (item_id,))
+        conn.commit()
+        flash('Item excluído com sucesso!', 'success')
+    except sqlite3.Error as e:
+        flash(f'Erro ao excluir item: {e}', 'danger')
+    finally:
+        conn.close()
+
+    return redirect(url_for('.detalhar_orcamento', obra_id=obra_id))

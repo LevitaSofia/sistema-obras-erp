@@ -159,25 +159,67 @@ def init_db():
 
         # --- 8. Garante que a tabela de medicoes (cabeçalho) exista ---
         # Unificando a estrutura nova e legada para ser a fonte única da verdade.
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS medicoes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                obra_id INTEGER NOT NULL,
-                numero_medicao INTEGER,
-                referencia TEXT,
-                nota_fiscal TEXT,
-                data_medicao DATE NOT NULL,
-                valor REAL,
-                status TEXT NOT NULL DEFAULT 'Em Aberto',
-                observacoes TEXT,
-                arquivo_path TEXT,
-                criacao_usuario TEXT,
-                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (obra_id) REFERENCES obras (id) ON DELETE CASCADE
-            )
-        ''')
 
-        # --- 8.1. Garante que colunas ausentes na tabela 'medicoes' sejam adicionadas ---
+        # --- 8.1 Verificação e Correção da Estrutura da Tabela 'medicoes' ---
+        # Verificamos se a coluna 'valor' permite nulos. Se não, recriamos a tabela.
+        cursor.execute("PRAGMA table_info(medicoes)")
+        columns_info = {col[1]: col for col in cursor.fetchall()}
+
+        # A coluna 'valor' (índice 3) não deve ser 'NOT NULL' (índice 3 == 1)
+        valor_is_not_null = 'valor' in columns_info and columns_info['valor'][3] == 1
+
+        if valor_is_not_null:
+            print(
+                "Aplicando migração: Corrigindo 'NOT NULL' na coluna 'valor' da tabela 'medicoes'...")
+            # Renomeia a tabela antiga
+            cursor.execute('ALTER TABLE medicoes RENAME TO medicoes_old;')
+            # Cria a nova tabela com a estrutura correta (valor REAL, sem NOT NULL)
+            cursor.execute('''
+                CREATE TABLE medicoes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    obra_id INTEGER NOT NULL,
+                    numero_medicao INTEGER,
+                    referencia TEXT,
+                    nota_fiscal TEXT,
+                    data_medicao DATE NOT NULL,
+                    valor REAL, 
+                    status TEXT NOT NULL DEFAULT 'Em Aberto',
+                    observacoes TEXT,
+                    arquivo_path TEXT,
+                    criacao_usuario TEXT,
+                    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (obra_id) REFERENCES obras (id) ON DELETE CASCADE
+                )
+            ''')
+            # Copia os dados da tabela antiga para a nova, garantindo um status padrão
+            cursor.execute('''
+                INSERT INTO medicoes (id, obra_id, numero_medicao, referencia, nota_fiscal, data_medicao, valor, status, observacoes, arquivo_path, criacao_usuario, data_criacao)
+                SELECT id, obra_id, numero_medicao, referencia, nota_fiscal, data_medicao, valor, COALESCE(status, 'Em Aberto'), observacoes, arquivo_path, criacao_usuario, data_criacao FROM medicoes_old;
+            ''')
+            # Remove a tabela antiga
+            cursor.execute('DROP TABLE medicoes_old;')
+            print("Tabela 'medicoes' corrigida com sucesso.")
+        else:
+            # Se a tabela ainda não existe ou já está correta, cria com a estrutura certa.
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS medicoes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    obra_id INTEGER NOT NULL,
+                    numero_medicao INTEGER,
+                    referencia TEXT,
+                    nota_fiscal TEXT,
+                    data_medicao DATE NOT NULL,
+                    valor REAL,
+                    status TEXT NOT NULL DEFAULT 'Em Aberto',
+                    observacoes TEXT,
+                    arquivo_path TEXT,
+                    criacao_usuario TEXT,
+                    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (obra_id) REFERENCES obras (id) ON DELETE CASCADE
+                )
+            ''')
+
+        # --- 8.2. Garante que colunas ausentes na tabela 'medicoes' sejam adicionadas ---
         cursor.execute("PRAGMA table_info(medicoes)")
         medicoes_columns = {column[1] for column in cursor.fetchall()}
 

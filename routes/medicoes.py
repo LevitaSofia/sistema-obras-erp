@@ -527,3 +527,28 @@ def fechar_medicao(medicao_id):
     finally:
         if conn:
             conn.close()
+
+
+@medicoes_bp.route('/<int:medicao_id>/reabrir', methods=['POST'])
+def reabrir_medicao(medicao_id):
+    """
+    Reabre uma medição que foi fechada, alterando seu status para 'Em Aberto'.
+    """
+    conn = get_db_connection()
+    try:
+        # Apenas altera o status e anula o valor finalizado
+        conn.execute(
+            "UPDATE medicoes SET status = 'Em Aberto', valor = NULL WHERE id = ?",
+            (medicao_id,)
+        )
+        conn.commit()
+        flash('Medição reaberta com sucesso! Agora você pode editá-la novamente.', 'info')
+        return redirect(url_for('.detalhar_medicao', medicao_id=medicao_id))
+
+    except sqlite3.Error as e:
+        conn.rollback()
+        flash(f'Erro ao reabrir a medição: {e}', 'danger')
+        return redirect(url_for('.detalhar_medicao', medicao_id=medicao_id))
+    finally:
+        if conn:
+            conn.close()

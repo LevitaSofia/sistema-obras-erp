@@ -135,12 +135,21 @@
                                     <td>{{ item.unidade }}</td>
                                     <td>{{ "%.2f"|format(item.quantidade)|replace('.', ',') }}</td>
                                     <td>{{ "%.2f"|format(item.valor_unitario)|replace('.', ',') }}</td>
-                                    <td><strong>{{ "%.2f"|format(item.valor_total)|replace('.', ',') }}</strong></td>
-                                    <td>
-                                        <a href="#" class="btn btn-sm btn-outline-warning disabled"><i
-                                                class="bi bi-pencil"></i></a>
-                                        <a href="#" class="btn btn-sm btn-outline-danger disabled"><i
-                                                class="bi bi-trash"></i></a>
+                                    <td class="text-end">{{ "%.2f"|format(item.valor_total)|replace('.', ',') }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ url_for('orcamento_bp.editar_item_orcamento', item_id=item.id) }}"
+                                            class="btn btn-sm btn-outline-primary me-1" title="Editar Item">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <form
+                                            action="{{ url_for('orcamento_bp.excluir_item_orcamento', item_id=item.id) }}"
+                                            method="POST" class="d-inline"
+                                            onsubmit="return confirm('Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                title="Excluir Item">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                                 {% endfor %}

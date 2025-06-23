@@ -260,25 +260,25 @@
                     <!-- Botões de Ação -->
                     <div class="d-flex justify-content-end align-items-center">
                         {% if medicao.status == 'Fechada' %}
-                        <button type="button" class="btn btn-secondary me-2" disabled>
-                            <i class="bi bi-lock-fill"></i> Fechado
-                        </button>
-                        <span class="badge bg-success p-2 fs-6">
-                            <i class="bi bi-check-circle-fill"></i> Medição Faturada
-                        </span>
+                            <span class="badge bg-success p-2 fs-6 me-2">
+                                <i class="bi bi-check-circle-fill"></i> Medição Faturada
+                            </span>
+                            <form method="POST" action="{{ url_for('.reabrir_medicao', medicao_id=medicao.id) }}" class="d-inline" onsubmit="return confirm('Tem certeza que deseja reabrir esta medição? O faturamento será cancelado e ela poderá ser editada novamente.');">
+                                <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-unlock-fill"></i> Reabrir Medição
+                                </button>
+                            </form>
                         {% else %}
-                        <!-- Formulário para Fechar a Medição -->
-                        <form method="POST" action="{{ url_for('.fechar_medicao', medicao_id=medicao.id) }}"
-                            class="d-inline me-2"
-                            onsubmit="return confirm('Tem certeza que deseja fechar esta medição? A ação não pode ser desfeita e os valores serão faturados.');">
-                            <button type="submit" class="btn btn-warning">
-                                <i class="bi bi-lock-fill"></i> Fechar e Faturar
+                            <!-- Formulário para Fechar a Medição -->
+                            <form method="POST" action="{{ url_for('.fechar_medicao', medicao_id=medicao.id) }}" class="d-inline me-2" onsubmit="return confirm('Tem certeza que deseja fechar esta medição? A ação não pode ser desfeita e os valores serão faturados.');">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-lock-fill"></i> Fechar e Faturar
+                                </button>
+                            </form>
+                            <!-- Formulário para Salvar a Medição (submete ao form principal) -->
+                            <button type="submit" class="btn btn-success" form="form-medicao-itens">
+                                <i class="bi bi-check-circle-fill"></i> Salvar Medição
                             </button>
-                        </form>
-                        <!-- Formulário para Salvar a Medição (submete ao form principal) -->
-                        <button type="submit" class="btn btn-success" form="form-medicao-itens">
-                            <i class="bi bi-check-circle-fill"></i> Salvar Medição
-                        </button>
                         {% endif %}
                     </div>
                 </div>
