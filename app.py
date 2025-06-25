@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 from itertools import groupby
 from collections import defaultdict
+import time
 
 # Modelos
 from models.obra_model import Obra
@@ -168,7 +169,11 @@ def init_db():
         # A coluna 'valor' (índice 3) não deve ser 'NOT NULL' (índice 3 == 1)
         valor_is_not_null = 'valor' in columns_info and columns_info['valor'][3] == 1
 
-        if valor_is_not_null:
+        # Só executa a migração se a tabela medicoes existir
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='medicoes';")
+        medicoes_exists = cursor.fetchone() is not None
+
+        if valor_is_not_null and medicoes_exists:
             print(
                 "Aplicando migração: Corrigindo 'NOT NULL' na coluna 'valor' da tabela 'medicoes'...")
             # Renomeia a tabela antiga
@@ -191,16 +196,23 @@ def init_db():
                     FOREIGN KEY (obra_id) REFERENCES obras (id) ON DELETE CASCADE
                 )
             ''')
-            # Copia os dados da tabela antiga para a nova, garantindo um status padrão
-            cursor.execute('''
-                INSERT INTO medicoes (id, obra_id, numero_medicao, referencia, nota_fiscal, data_medicao, valor, status, observacoes, arquivo_path, criacao_usuario, data_criacao)
-                SELECT id, obra_id, numero_medicao, referencia, nota_fiscal, data_medicao, valor, COALESCE(status, 'Em Aberto'), observacoes, arquivo_path, criacao_usuario, data_criacao FROM medicoes_old;
-            ''')
-            # Remove a tabela antiga
-            cursor.execute('DROP TABLE medicoes_old;')
+            # Só copia e deleta se medicoes_old existir
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='medicoes_old';")
+            medicoes_old_exists = cursor.fetchone() is not None
+            if medicoes_old_exists:
+                try:
+                    cursor.execute('''
+                        INSERT INTO medicoes (id, obra_id, numero_medicao, referencia, nota_fiscal, data_medicao, valor, status, observacoes, arquivo_path, criacao_usuario, data_criacao)
+                        SELECT id, obra_id, numero_medicao, referencia, nota_fiscal, data_medicao, valor, COALESCE(status, 'Em Aberto'), observacoes, arquivo_path, criacao_usuario, data_criacao FROM medicoes_old;
+                    ''')
+                except Exception as e:
+                    print(f"Aviso: erro ao copiar medicoes_old: {e}")
+                try:
+                    cursor.execute('DROP TABLE medicoes_old;')
+                except Exception as e:
+                    print(f"Aviso: erro ao dropar medicoes_old: {e}")
             print("Tabela 'medicoes' corrigida com sucesso.")
         else:
-            # Se a tabela ainda não existe ou já está correta, cria com a estrutura certa.
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS medicoes (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -209,7 +221,7 @@ def init_db():
                     referencia TEXT,
                     nota_fiscal TEXT,
                     data_medicao DATE NOT NULL,
-                    valor REAL,
+                    valor REAL, 
                     status TEXT NOT NULL DEFAULT 'Em Aberto',
                     observacoes TEXT,
                     arquivo_path TEXT,
@@ -275,6 +287,13 @@ def init_db():
         # --- 10. REMOVIDO: Execução do script SQL legado ---
         # A estrutura legada foi mesclada na definição acima para evitar conflitos.
 
+        # Garantia extra: remove qualquer tabela residual 'medicoes_old' (não causa erro se não existir)
+        try:
+            cursor.execute('DROP TABLE IF EXISTS medicoes_old;')
+            print("Tabela 'medicoes_old' removida (se existia).")
+        except Exception as e:
+            print(f"Aviso: erro ao tentar remover medicoes_old: {e}")
+    
         conn.commit()
         print("Banco de dados verificado e atualizado com sucesso.")
 
@@ -401,19 +420,30 @@ def construtoras():
         if not nome or not codigo:
             flash('Nome e Código são campos obrigatórios.', 'danger')
         else:
-            try:
-                conn.execute(
-                    'INSERT INTO construtoras (nome, codigo, razao_social, cnpj) VALUES (?, ?, ?, ?)',
-                    (nome, codigo, razao_social, cnpj)
-                )
-                conn.commit()
-                flash('Construtora adicionada com sucesso!', 'success')
-            except sqlite3.IntegrityError:
-                flash(
-                    'Já existe uma construtora com esse Nome, Código ou CNPJ.', 'danger')
-            except Exception as e:
-                flash(
-                    f'Ocorreu um erro ao adicionar a construtora: {e}', 'danger')
+            # Verificação manual de duplicidade
+            nome_existente = conn.execute('SELECT 1 FROM construtoras WHERE nome = ?', (nome,)).fetchone()
+            codigo_existente = conn.execute('SELECT 1 FROM construtoras WHERE codigo = ?', (codigo,)).fetchone()
+            cnpj_valido = cnpj.strip() if cnpj else None
+            cnpj_existente = None
+            if cnpj_valido:
+                cnpj_existente = conn.execute('SELECT 1 FROM construtoras WHERE cnpj = ?', (cnpj_valido,)).fetchone()
+
+            if nome_existente:
+                flash('Já existe uma construtora com esse Nome.', 'danger')
+            elif codigo_existente:
+                flash('Já existe uma construtora com esse Código.', 'danger')
+            elif cnpj_valido and cnpj_existente:
+                flash('Já existe uma construtora com esse CNPJ.', 'danger')
+            else:
+                try:
+                    conn.execute(
+                        'INSERT INTO construtoras (nome, codigo, razao_social, cnpj) VALUES (?, ?, ?, ?)',
+                        (nome, codigo, razao_social, cnpj_valido if cnpj_valido else None)
+                    )
+                    conn.commit()
+                    flash('Construtora adicionada com sucesso!', 'success')
+                except Exception as e:
+                    flash(f'Ocorreu um erro ao adicionar a construtora: {e}', 'danger')
 
         conn.close()
         return redirect(url_for('construtoras'))
@@ -610,6 +640,35 @@ def faturamento_geral():
                            total_geral=total_geral)
 
 
+def print_table_schema():
+    start = time.time()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='obras'")
+    schema = cursor.fetchone()
+    if schema:
+        print("Esquema da tabela 'obras':")
+        print(schema[0])
+    else:
+        print("Tabela 'obras' não encontrada.")
+    conn.close()
+    print(f"[DEBUG] Tempo para print_table_schema: {time.time() - start:.2f}s")
+
+@app.route('/admin/init_db')
+def admin_init_db():
+    start = time.time()
+    try:
+        init_db()
+        flash('Banco de dados verificado/atualizado com sucesso!', 'success')
+    except Exception as e:
+        flash(f'Erro ao inicializar banco de dados: {e}', 'danger')
+    print(f"[DEBUG] Tempo para init_db: {time.time() - start:.2f}s")
+    return redirect(url_for('index'))
+
+start_boot = time.time()
+print_table_schema()
+print(f"[DEBUG] Tempo total de boot até app.run: {time.time() - start_boot:.2f}s")
+
 if __name__ == '__main__':
-    init_db()
+    # init_db()  # Removido do startup padrão para acelerar o boot
     app.run(debug=True, host='0.0.0.0')
